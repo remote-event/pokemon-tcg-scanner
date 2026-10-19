@@ -5,6 +5,40 @@ pricing. Android sends cropped cards over a bounded WebSocket stream; the browse
 uses the same collection store through the HTTP API. See the root
 [quick start](../README.md) for a new installation.
 
+## Setup prerequisites
+
+On minimal Ubuntu installations, install `python3-venv`, `libgl1` and
+`libglib2.0-0` before running setup. OpenCV needs these shared libraries.
+Training additionally needs Python development headers and a C compiler.
+For GPU setup, `nvidia-smi` must work inside Linux/WSL and your NVIDIA driver
+must support the installer's CUDA 13.0 runtime.
+
+Setup downloads dependencies; model preparation and catalog sync download the
+remaining assets. Weights, reference databases and personal scans are not
+included in the repository. For a smaller first catalog, use
+`(cd desktop && ../.venv/bin/python -m tcg_scanner sync --set sv01)`.
+The default catalog starts with Scarlet & Violet; configure `since` or pass
+explicit `--set` options for other sets.
+
+## Configuration and storage
+
+`desktop/config.toml` contains portable defaults. The installer creates
+`desktop/config.local.toml`, which is ignored by Git and takes precedence.
+`--config` or `TCG_CONFIG` selects another file. `TCG_<SETTING>` environment
+variables override file settings, and CLI options override those.
+Data and worker paths in TOML resolve relative to the configuration file;
+collector weights resolve relative to `data_dir`.
+
+| Path | Contents |
+| --- | --- |
+| `data/metadata.sqlite3` | Catalog metadata and reference vectors |
+| `data/indexes/` | Rebuildable FAISS index |
+| `data/scan-history/` | Collections, scanned photos and related caches |
+| `artifacts/` | Optional developer reports |
+
+Back up the entire scan-history directory while the server is stopped. The
+web interface's ZIP export is a portable collection export, not a full backup.
+
 ## Manual installation or recovery
 
 Use Python 3.11/3.12 on Linux x86_64 or WSL2. These commands are also the recovery

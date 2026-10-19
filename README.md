@@ -1,89 +1,56 @@
 # pokemon-tcg-scanner
 
-Scan Pokémon cards with an Android phone, identify them on your own computer,
-and organize the results into collections. Images travel over your local network.
-The web interface supports search, corrections, collection management, and ZIP
-exports containing JSON metadata and the original scanned images.
+Scan Pokémon cards with your Android phone and organize them into collections.
+Your computer identifies each card over your local network.
 
-The phone detects and crops the card with YOLO. The backend combines DINOv2
-image embeddings and FAISS search with optional collector-number detection and
-PaddleOCR character recognition. Uncertain matches stay unsaved until resolved;
-the web interface lets you review candidates.
+- **Scan and save** cards directly to a collection.
+- **Manage your collection** in a browser: search, edit, and review uncertain matches.
+- **Export your cards** as a ZIP with JSON metadata and the original scanned images.
 
-## Requirements
+**Android camera → local server → card identification → collection**
 
-- Linux x86_64 or WSL2, Python 3.11 or 3.12, and Python's `venv` support.
-- NVIDIA GPU for real-time use. The GPU installer uses PyTorch CUDA 13.0 wheels;
-  your NVIDIA driver must support that runtime. `nvidia-smi` must work in Linux/WSL.
-  CPU mode is available but is not a real-time performance target.
-- Android 8.0+ phone and a computer on the same trusted private network.
-- Internet access during dependency installation, model preparation, and catalog
-  synchronization. Scanning uses cached inference models; reference artwork and
-  market-price lookups can still contact TCGdex.
-- JDK 17 and Android SDK 36 to build the Android client from source.
+## What you need
 
-On minimal Ubuntu installations, install `python3-venv`, `libgl1` and
-`libglib2.0-0` using your system package manager before setup (OpenCV needs the
-shared libraries). Training additionally needs Python development headers and a C compiler.
+- **Computer:** Linux or WSL2, Python 3.11/3.12, and an NVIDIA GPU recommended
+  for real-time scanning. CPU mode is also available.
+- **Phone:** Android 8.0+ on the same private network as your computer.
+- **Android build tools:** JDK 17, Android SDK 36, and ADB. There is no
+  downloadable APK yet; you build the app yourself.
 
-The reference catalog, downloaded models, collector-number checkpoint and personal
-scans are **not included** in source releases. Do not copy another installation's
-collection database to get started.
+Internet is needed for setup and card catalog downloads. Identification runs
+locally; card artwork and price lookups may still use the internet.
 
-## Install the backend
+## Quick start
 
-Clone the repository and enter its directory:
+### 1. Set up the server
+
+Run in a Linux or WSL terminal:
 
 ```bash
 git clone https://github.com/remote-event/pokemon-tcg-scanner.git
 cd pokemon-tcg-scanner
-```
 
-From the root of your checkout:
-
-```bash
-# Choose cuda or cpu. The installer creates .venv and desktop/config.local.toml.
 bash setup.sh --device cuda
-
-# Download the DINOv2 and card-detector models for subsequent offline startup.
 .venv/bin/python scripts/prepare_models.py
-
-# Populate metadata, embeddings and the FAISS index. This can take a while.
 (cd desktop && ../.venv/bin/python -m tcg_scanner sync)
-
-# Check dependencies, caches, catalog and selected compute backend.
-(cd desktop && ../.venv/bin/python -m tcg_scanner.doctor)
 
 bash start-server.sh
 ```
 
-The server prints its private address. Open `http://<computer-ip>:8765/`, create a
-collection, and select it for scanning. For the initial catalog, `--set sv01`
-limits synchronization to one set; omit it to populate the default set range.
-The default catalog starts with Scarlet & Violet. Configure `since` or supply
-explicit `--set` options if you want other sets.
+Use `--device cpu` instead if you do not have a supported NVIDIA GPU. GPU setup
+requires a driver compatible with CUDA 13.0. The first catalog sync can take a
+while and includes Scarlet & Violet onward by default.
 
-For collector-number OCR, supply the existing **trained RF-DETR Small checkpoint**
-at installation time:
+Open the address printed by the server (`http://<computer-ip>:8765`) in your
+browser and create a collection. Keep this terminal running.
 
-```bash
-bash setup.sh --device cuda --collector-weights /path/to/rfdetr-small.pth
-.venv/bin/python scripts/prepare_models.py
-```
+[Setup prerequisites and configuration](desktop/README.md) ·
+[WSL and connection help](docs/TROUBLESHOOTING.md)
 
-This creates isolated RF-DETR and PaddleOCR environments. It does not train a
-model. There is currently no hosted download for this project's trained
-checkpoint; without it, install the visual-matching mode above. The upstream
-RF-DETR pretrained model is not a replacement for collector-number training.
-See [model setup](docs/MODELS.md) and [manual installation](desktop/README.md).
+### 2. Install the Android app
 
-For WSL, use mirrored networking and allow the selected TCP port and UDP 5353
-from your private subnet. Setup does not change firewall rules. See
-[network troubleshooting](docs/TROUBLESHOOTING.md).
-
-## Install the Android app
-
-Prepare the phone detector and build the APK:
+In a second terminal, from the repository folder, with your phone connected by
+USB and USB debugging enabled:
 
 ```bash
 .venv/bin/python -m pip install -r desktop/requirements/requirements-export.txt
@@ -92,58 +59,34 @@ bash mobile/build.sh
 adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-This is a local development build; each developer uses their own signing key.
-Open **pokemon-tcg-scanner**, allow camera access, and select the collection using
-the bottom selector. Discovery is automatic; the gear menu also accepts a private
-server IP. Keep one card visible and reasonably steady until the result appears.
+[Android SDK setup and Windows tools from WSL](mobile/README.md#prepare-and-build)
 
-[Android setup and WSL builds](mobile/README.md) · [Web collections](web/README.md)
+### 3. Scan a card
 
-## Configuration and data
+Open the app, allow camera access, and select your collection at the bottom.
+The app finds the server automatically; you can also enter its IP in settings.
+Hold one card steady in view. Confident matches save automatically; uncertain
+matches can be reviewed in the web interface.
 
-`desktop/config.toml` contains portable defaults. `desktop/config.local.toml` is
-ignored by Git and takes precedence. `--config` or `TCG_CONFIG` selects another
-file; `TCG_<SETTING>` environment variables override settings within it, and CLI
-options override those. Data and worker paths in TOML resolve relative to that
-file. Collector weights resolve relative to `data_dir`.
+Next time, just run `bash start-server.sh` and open the app.
 
-- `data/metadata.sqlite3`: catalog metadata and reference vectors.
-- `data/indexes/`: rebuildable FAISS index.
-- `data/scan-history/`: your collections, scanned photos and related caches.
-- `artifacts/`: optional developer reports; never required at server startup.
+## Optional: collector-number recognition
 
-Back up the entire scan-history directory while the server is stopped. Export ZIP
-in the web interface is a portable collection export, not a full server backup.
+The quick start identifies cards by visual similarity using DINOv2 and FAISS.
+Collector-number recognition adds RF-DETR and recognition-only PaddleOCR to
+help distinguish cards with similar artwork across sets.
 
-## Repository layout
+**This requires a trained collector-number checkpoint, which is not currently
+available as a public download.** Visual matching works without it.
+[Enable collector-number recognition](docs/MODELS.md#enable-collector-number-recognition).
 
-| Path | Purpose |
-| --- | --- |
-| `desktop/tcg_scanner/` | Backend runtime, APIs, inference and storage |
-| `desktop/tests/` | Offline regression tests |
-| `desktop/tools/` | Explicit benchmarks, model export and discovery diagnostics |
-| `web/` | Static collection UI; no frontend build step |
-| `mobile/` | Native Kotlin/Compose Android app and Bash build/test entry points |
-| `training/collector_numbers/` | Optional training utilities, separate from inference |
-| `scripts/` | Installation, model preparation and source packaging |
-| `docs/` | Models, troubleshooting and release procedure |
+## More information
 
-## Development and releases
+- [Backend configuration, storage, and commands](desktop/README.md)
+- [Android app](mobile/README.md) · [Web interface](web/README.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md) · [How matching works](desktop/HYBRID_SCANNING.md)
+- [Contributing](CONTRIBUTING.md) · [Release guide](docs/RELEASING.md)
 
-```bash
-.venv/bin/python -m pip install -r desktop/requirements/requirements-dev.txt
-(cd desktop && ../.venv/bin/python -B -m unittest discover -s tests)
-.venv/bin/python -m ruff check desktop scripts training
-python3 scripts/package_source.py
-```
-
-The source-bundle command creates `dist/pokemon-tcg-scanner-source.zip` using an
-allowlist, excluding personal data, model weights, local settings and build outputs.
-It refuses to overwrite an existing archive. CI checks the backend, training
-utilities and Android compilation without using a private catalog or GPU.
-See [contributing](CONTRIBUTING.md) and [releasing](docs/RELEASING.md).
-
-Original project code is [MIT licensed](LICENSE). Third-party dependencies and
-models retain their own licenses, including the AGPL-3.0 card detector; see
-[third-party notices](THIRD_PARTY_NOTICES.md). This is an independent community
-project, not an official Pokémon product.
+Original code is [MIT licensed](LICENSE). Models and dependencies retain their
+[own licenses](THIRD_PARTY_NOTICES.md), including the AGPL-3.0 card detector.
+This is an independent community project, not an official Pokémon product.

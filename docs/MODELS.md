@@ -17,6 +17,20 @@ phone detector. Hugging Face and Paddle use their normal per-user caches. The
 Android model goes in `mobile/android/app/src/main/assets/`; its generated JSON
 records source/output hashes and preprocessing.
 
+## Enable collector-number recognition
+
+For a new installation, supply your trained checkpoint during setup:
+
+```bash
+bash setup.sh --device cuda --collector-weights /path/to/rfdetr-small.pth
+.venv/bin/python scripts/prepare_models.py
+```
+
+This creates isolated RF-DETR and PaddleOCR environments. It does not train a
+model. For an existing installation, follow the
+[OCR upgrade instructions](../desktop/README.md#add-collector-number-recognition-to-an-existing-installation)
+instead of rerunning setup.
+
 For OCR, set `collector_weights` in your local config. Relative checkpoint paths
 resolve under `data_dir`; absolute paths are also accepted. No retraining is
 necessary when a compatible trained checkpoint is available. The project's
