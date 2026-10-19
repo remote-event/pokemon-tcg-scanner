@@ -7,7 +7,30 @@ Your computer identifies each card over your local network.
 - **Manage your collection** in a browser: search, edit, and review uncertain matches.
 - **Export your cards** as a ZIP with JSON metadata and the original scanned images.
 
-**Android camera → local server → card identification → collection**
+## How a scan works
+
+1. **Find the card.** YOLOv8n detects the card's corners on your Android phone.
+   The app straightens and crops the card, then sends it to your local server.
+2. **Compare the artwork.** DINOv2 Small creates an image embedding—a numerical
+   representation of the card. FAISS compares it with the reference catalog
+   to find visually similar cards.
+3. **Read the collector number (optional).** In parallel, a trained RF-DETR Small
+   model finds the number region. PaddleOCR (`en_PP-OCRv5_mobile_rec`) reads only
+   that small crop, without running another text detector.
+4. **Combine the evidence.** The number is checked against the entire card
+   catalog, including cards outside the top visual matches. Candidates supported
+   by both paths are preferred, helping distinguish similar artwork and numbers
+   shared across sets. If OCR is unavailable or unreliable, visual matching is
+   used on its own.
+5. **Save a confident result.** The card is added to your selected collection.
+   Ambiguous results stay unsaved while the app tries another view; you can also
+   review candidates in the browser. An unchanged accepted card is not repeatedly
+   processed or saved.
+
+All AI after the initial card crop runs on your computer. **The quick start uses
+visual matching; optional OCR needs a trained collector-number checkpoint that
+is not yet available as a public download.**
+[Model setup](docs/MODELS.md) · [Detailed matching process](desktop/HYBRID_SCANNING.md)
 
 ## What you need
 
@@ -69,34 +92,6 @@ Hold one card steady in view. Confident matches save automatically; uncertain
 matches can be reviewed in the web interface.
 
 Next time, just run `bash start-server.sh` and open the app.
-
-## Optional: collector-number recognition
-
-The quick start identifies cards by visual similarity using DINOv2 and FAISS.
-Collector-number recognition adds RF-DETR and recognition-only PaddleOCR to
-help distinguish cards with similar artwork across sets.
-
-**This requires a trained collector-number checkpoint, which is not currently
-available as a public download.** Visual matching works without it.
-[Enable collector-number recognition](docs/MODELS.md#enable-collector-number-recognition).
-
-## Models and technologies
-
-| Technology | What it does | Runs on |
-| --- | --- | --- |
-| YOLOv8n card detector + ONNX Runtime | Finds and crops the card before sending it | Android |
-| DINOv2 Small + PyTorch | Turns card artwork into a vector for visual matching | Server |
-| FAISS | Searches the reference catalog for visually similar cards | Server |
-| RF-DETR Small · optional | Locates the collector-number region | Server |
-| PaddleOCR `en_PP-OCRv5_mobile_rec` · optional | Reads characters from that crop; recognition only | Server |
-| Kotlin + Jetpack Compose + CameraX | Native app interface and camera capture | Android |
-| Python + FastAPI + WebSockets | Serves the API and handles live scans | Server |
-| SQLite | Stores catalog data and collections | Server |
-| HTML, CSS, and JavaScript | Collection management and exports | Browser |
-| TCGdex API | Supplies card metadata, reference artwork, and prices | External service |
-
-Only card detection runs on the phone; visual matching and optional OCR run on
-your computer. See [model details](docs/MODELS.md) for checkpoints and preparation.
 
 ## More information
 
