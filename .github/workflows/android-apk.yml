@@ -135,7 +135,7 @@ jobs:
 
           The app connects to a local computer running the scanner server. Follow the [setup guide]($REPOSITORY_URL/tree/$RELEASE_TAG#quick-start) for Windows, Linux, or macOS.
 
-          Updates use the same release signing key. A locally built debug app has a different signature and cannot be updated in place with this APK; see [installation details]($REPOSITORY_URL/blob/$RELEASE_TAG/mobile/README.md#install-the-github-build).
+          Updates use the same release signing key. A locally built debug app has a different signature and cannot be updated in place with this APK; see [installation details]($REPOSITORY_URL/blob/$RELEASE_TAG/README.md#android-updates).
 
           **pokemon-tcg-scanner-sources.zip** contains matching app source, the original phone model, and license notices. **SHA256SUMS** verifies the downloads; **signing-certificate.txt** records the public signing fingerprint. For the server model and training dataset, clone the repository with Git LFS as described in the setup guide.
           EOF

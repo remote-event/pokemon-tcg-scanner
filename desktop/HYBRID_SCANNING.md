@@ -64,7 +64,7 @@ one branch, preventing an unbounded GPU queue.
 
 ## Installation and validation
 
-See [backend setup](README.md) for the isolated worker environments and
+See [backend setup](../README.md#advanced-setup-and-recovery) for the isolated worker environments and
 [model setup](../docs/MODELS.md) for required local assets. Existing installations
 can point at their trained checkpoint without moving or retraining it.
 

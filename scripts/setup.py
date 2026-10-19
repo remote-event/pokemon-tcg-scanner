@@ -67,7 +67,7 @@ def main(argv=None):
         parser.error(str(exc))
     local = ROOT / 'desktop/config.local.toml'
     if local.exists():
-        parser.error(f'{local} already exists. It was preserved. Use the dependency commands in desktop/README.md to update an existing installation.')
+        parser.error(f'{local} already exists. It was preserved. Use the dependency commands in README.md#advanced-setup-and-recovery to update an existing installation.')
     weights = None if args.visual_only else (args.collector_weights.expanduser() if args.collector_weights
                                             else ROOT / 'models/collector-number/rfdetr-small.pth')
     if weights:
@@ -120,5 +120,5 @@ if __name__ == '__main__':
     try:
         raise SystemExit(main())
     except (OSError, subprocess.CalledProcessError) as exc:
-        print(f'Setup failed: {exc}\nExisting files were retained. See desktop/README.md for manual recovery.', file=sys.stderr)
+        print(f'Setup failed: {exc}\nExisting files were retained. See README.md#advanced-setup-and-recovery for manual recovery.', file=sys.stderr)
         raise SystemExit(1)

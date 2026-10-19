@@ -26,8 +26,8 @@ Model provenance, immutable upstream revisions and exported-model hashes are
 recorded in [model setup](docs/MODELS.md) and
 `mobile/android/app/src/main/assets/card_pose_yolov8n.json`.
 The project's fine-tuned RF-DETR Small checkpoint and its labeled training images
-are included through Git LFS. See the [model card](models/collector-number/README.md)
-and [dataset documentation](training/collector_numbers/dataset/README.md) for
+are included through Git LFS. See the [model card](README.md#included-collector-number-checkpoint)
+and [dataset documentation](README.md#included-training-dataset) for
 provenance, preprocessing and checksums. RF-DETR's upstream Apache-2.0 terms
 remain applicable; the code's MIT license does not relicense card artwork.
 

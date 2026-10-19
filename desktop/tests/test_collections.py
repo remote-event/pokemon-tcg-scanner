@@ -149,7 +149,7 @@ class CollectionApiTests(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.content, (root / filename).read_bytes())
         self.assertIn('Export ZIP', self.client.get('/').text)
-        self.assertEqual(self.client.get('/web/README.md').status_code, 404)
+        self.assertEqual(self.client.get('/web/tests/collections.mjs').status_code, 404)
 
     def test_export_download_headers_content_and_access(self):
         id = self.action(action='create',name='Export binder')['id']

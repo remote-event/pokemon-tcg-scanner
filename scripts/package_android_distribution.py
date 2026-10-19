@@ -67,7 +67,7 @@ Upstream model: https://huggingface.co/{spec['source']}/tree/{spec['revision']}
 Checkpoint SHA-256: `{spec['source_sha256']}`
 Exported ONNX SHA-256: `{spec['onnx_sha256']}`
 Export implementation: https://github.com/ultralytics/ultralytics/tree/v8.4.178
-Rebuild instructions: `mobile/README.md` and `.github/workflows/android-apk.yml`.
+Rebuild instructions: `README.md#building-the-android-app` and `.github/workflows/android-apk.yml`.
 
 The packaged detector is an ONNX conversion of the upstream weights, without
 retraining. Its AGPL-3.0 terms remain applicable; see `licenses/AGPL-3.0.txt` and

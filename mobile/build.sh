@@ -3,7 +3,7 @@ set -euo pipefail
 mobile_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd -- "$mobile_root/android"
 if [[ ! -f app/src/main/assets/card_pose_yolov8n.onnx ]]; then
-  echo 'Phone detector missing. Run scripts/prepare_models.py --android first; see mobile/README.md.' >&2
+  echo 'Phone detector missing. Run scripts/prepare_models.py --android first; see README.md#building-the-android-app.' >&2
   exit 1
 fi
 if (( $# == 0 )); then set -- testDebugUnitTest assembleDebug; fi

@@ -21,7 +21,7 @@ records source/output hashes and preprocessing.
 
 The normal pipeline combines visual matching and collector-number recognition.
 The deployed RF-DETR Small checkpoint is versioned in
-[`models/collector-number/`](../models/collector-number/README.md) through Git LFS.
+[`models/collector-number/`](../README.md#included-collector-number-checkpoint) through Git LFS.
 Its metadata records the SHA-256; setup verifies it before installing dependencies.
 
 ```bash
@@ -34,7 +34,7 @@ python scanner.py models
 Setup uses the included checkpoint and creates persistent RF-DETR and PaddleOCR
 worker environments. It does not retrain the model. `--collector-weights PATH`
 can select a replacement trained checkpoint. For an existing installation, follow
-[worker setup](../desktop/README.md#add-collector-number-recognition-to-an-existing-installation)
+[worker setup](../README.md#add-collector-number-recognition-to-an-existing-installation)
 instead of rerunning the installer.
 
 If a checkpoint is only a small text file beginning with `version
@@ -43,8 +43,8 @@ Run `git lfs pull` in a Git clone. Source-only ZIPs from `scripts/package_source
 exclude binary assets; clone with Git LFS for a complete installation.
 
 The original 500 training images, COCO bounding boxes, grouping and split metadata
-are in [`training/collector_numbers/dataset/`](../training/collector_numbers/dataset/README.md).
-The [training guide](../training/collector_numbers/README.md) reproduces preprocessing
+are in [`training/collector_numbers/dataset/`](../README.md#included-training-dataset).
+The [training guide](../README.md#training-your-own-detector) reproduces preprocessing
 and the original 350/100/50 split. Training runs and optimizer checkpoints remain local.
 
 ## Runtime behavior

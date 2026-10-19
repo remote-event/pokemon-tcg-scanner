@@ -8,7 +8,7 @@ fi
 run_dir="${TCG_TRAINING_RUN:-$project_root/artifacts/collector-number-training/run-001}"
 dataset_dir="${TCG_TRAINING_DATASET:-$project_root/artifacts/collector-number-training/dataset}"
 if [[ ! -x "$training_python" ]]; then
-  echo 'Training environment is missing. See training/collector_numbers/README.md.' >&2
+  echo 'Training environment is missing. See README.md#training-your-own-detector.' >&2
   exit 1
 fi
 if [[ -f "$run_dir/completed.json" ]]; then
