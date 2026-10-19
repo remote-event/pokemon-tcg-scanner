@@ -96,12 +96,14 @@ def main(argv=None):
     command(python, '-m', 'pip', 'install', *torch_args)
     command(python, '-m', 'pip', 'install', '-r', req / ('requirements-gpu.txt' if plan['faiss_device'] == 'cuda' else 'requirements.txt'),
             '-r', req / 'requirements-yolo.txt', '-r', req / 'requirements-server.txt')
+    if plan['system'] == 'Darwin':
+        command(python, ROOT / 'scripts/fix_macos_openmp.py')
     if weights:
         collector = environment(ROOT / '.venvs/collector')
         command(collector, '-m', 'pip', 'install', *torch_args)
         command(collector, '-m', 'pip', 'install', '-r', req / 'requirements-collector.txt')
         paddle = environment(ROOT / '.venvs/paddle')
-        paddle_args = ['paddlepaddle-gpu==3.2.0', '--index-url', plan['paddle_index']] if plan['paddle_index'] else ['paddlepaddle==3.2.0']
+        paddle_args = ['paddlepaddle-gpu==3.2.0', '--index-url', plan['paddle_index']] if plan['paddle_index'] else ['paddlepaddle==3.2.2']
         command(paddle, '-m', 'pip', 'install', *paddle_args)
         command(paddle, '-m', 'pip', 'install', '-r', req / 'requirements-paddle-rec.txt')
     # Simple flat TOML: JSON strings/numbers are also valid TOML values here.

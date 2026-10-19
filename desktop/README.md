@@ -19,7 +19,7 @@ must support the installer's CUDA 13.0 runtime.
 Setup downloads dependencies; model preparation and catalog sync download the
 remaining assets. The collector checkpoint and training images are included through Git LFS;
 reference databases and personal collection scans stay local. For a smaller first catalog, use
-`(cd desktop && ../.venv/bin/python -m tcg_scanner sync --set sv01)`.
+`python scanner.py sync --set sv01`.
 The default catalog starts with Scarlet & Violet; configure `since` or pass
 explicit `--set` options for other sets.
 
@@ -81,8 +81,7 @@ python3 -m venv .venvs/paddle
 .venvs/paddle/bin/python -m pip install -r desktop/requirements/requirements-paddle-rec.txt
 ```
 
-For CPU, choose PyTorch's `/whl/cpu` index, install `paddlepaddle==3.2.0` from
-Paddle's `/packages/stable/cpu/` index, and set `ocr_device = "cpu"`.
+For CPU, choose PyTorch's `/whl/cpu` index, install `paddlepaddle==3.2.2` from PyPI, and set `ocr_device = "cpu"`.
 In `desktop/config.local.toml` set:
 
 ```toml
@@ -123,7 +122,7 @@ or internet-facing authentication. Use it only on a trusted private network.
 
 ## Catalog CLI
 
-Run from `desktop/` using `../.venv/bin/python -m tcg_scanner`:
+Run from the repository root using `python scanner.py cli <command>`:
 
 | Command | Purpose |
 | --- | --- |

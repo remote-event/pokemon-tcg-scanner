@@ -1,5 +1,6 @@
 """Read-only installation checks. Run before starting the offline inference server."""
 import argparse
+from contextlib import closing
 import importlib.util
 import json
 from pathlib import Path
@@ -29,7 +30,7 @@ def check(config):
     database = config.root / 'metadata.sqlite3'
     if database.is_file():
         try:
-            with sqlite3.connect(database.as_uri() + '?mode=ro', uri=True) as db:
+            with closing(sqlite3.connect(database.as_uri() + '?mode=ro', uri=True)) as db:
                 count = db.execute("SELECT COUNT(*) FROM embeddings WHERE status='ready'").fetchone()[0]
             record('reference catalog', count > 0, f'{count} ready embeddings')
         except sqlite3.Error as exc:

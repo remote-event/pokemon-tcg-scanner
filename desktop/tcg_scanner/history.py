@@ -1,5 +1,6 @@
 """Durable local scan journal and a shared, lazy TCGdex image cache."""
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from io import BytesIO
 import hashlib
 import json
@@ -338,7 +339,7 @@ class History:
             try:
                 body = None
                 if self.data_root and (self.data_root / 'metadata.sqlite3').exists():
-                    with sqlite3.connect(f'file:{self.data_root / "metadata.sqlite3"}?mode=ro', uri=True) as db:
+                    with closing(sqlite3.connect((self.data_root / "metadata.sqlite3").resolve().as_uri() + "?mode=ro", uri=True)) as db:
                         row = db.execute('SELECT local_image_path FROM cards WHERE card_id=?', (ref['card_id'],)).fetchone()
                     if row and row[0]:
                         local = (self.data_root / row[0]).resolve()

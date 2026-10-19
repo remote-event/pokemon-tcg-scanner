@@ -68,7 +68,8 @@ class Database:
                             self.conn.backup(backup)
                         finally:
                             backup.close()
-                        with open(temporary, "rb") as saved:
+                        # Windows FlushFileBuffers requires a writable handle.
+                        with open(temporary, "rb+") as saved:
                             os.fsync(saved.fileno())
                         os.replace(temporary, backup_path)
                     finally:

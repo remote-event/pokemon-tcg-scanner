@@ -40,6 +40,8 @@ must already be installed. `nvidia-smi` should work before choosing CUDA.
 Windows uses `.venv/Scripts/python.exe` and `.venvs/<worker>/Scripts/python.exe`.
 Linux/macOS use `bin/python`. The installer writes the correct paths into ignored
 `desktop/config.local.toml`. Existing local configuration is never overwritten.
+Use separate checkouts when switching between native Windows and WSL: their
+virtual environments and local interpreter paths are not interchangeable.
 Worker communication uses bounded background I/O threads, so it does not require
 Unix-only pipe polling. CPU workers receive a longer inference timeout.
 
@@ -55,7 +57,10 @@ The existing Bash launchers remain available on Linux/WSL/macOS.
 - **Linux:** install Python's `venv` support. Minimal Ubuntu installations also
   need `libgl1` and `libglib2.0-0` for OpenCV. Linux ARM64 uses CPU packages.
 - **macOS:** use macOS 14+ and ARM64 Python on Apple silicon. Dependencies come
-  from PyPI without CUDA libraries. Allow incoming local-network connections.
+  from PyPI without CUDA libraries. Setup links FAISS to PyTorch’s bundled OpenMP
+  library to prevent conflicting runtimes. After reinstalling either wheel, run
+  `python scanner.py python scripts/fix_macos_openmp.py` again. Allow incoming
+  local-network connections.
 
 The Android app still targets Android 8.0+; it is not an iOS app. Build it with
 JDK 17 and Android SDK 36 using `python scanner.py android`. On Windows this calls

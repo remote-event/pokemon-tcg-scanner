@@ -31,9 +31,9 @@ class InstallationTests(unittest.TestCase):
             config.write_text('data_dir="data"\nocr_python="env/bin/python"\ncollector_python="detector/bin/python"\n')
             with patch.dict(os.environ, {}, clear=True):
                 result = Config.load(config, {})
-            self.assertEqual(result.root, Path(folder) / 'data')
-            self.assertEqual(result.ocr_python, str(Path(folder) / 'env/bin/python'))
-            self.assertEqual(result.collector_python, str(Path(folder) / 'detector/bin/python'))
+            self.assertEqual(result.root, Path(folder).resolve() / 'data')
+            self.assertEqual(result.ocr_python, str(Path(folder).resolve() / 'env/bin/python'))
+            self.assertEqual(result.collector_python, str(Path(folder).resolve() / 'detector/bin/python'))
 
     def test_explicit_environment_config_is_selected(self):
         with patch.dict(os.environ, {'TCG_CONFIG': '/tmp/custom-scanner.toml'}):
@@ -41,7 +41,7 @@ class InstallationTests(unittest.TestCase):
 
     def test_virtual_environment_python_symlink_is_preserved(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             python = root / 'worker/bin/python'
             python.parent.mkdir(parents=True)
             try:
@@ -84,7 +84,7 @@ class InstallationTests(unittest.TestCase):
     def test_installer_preserves_existing_local_configuration(self):
         setup = script('setup')
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             (root / 'desktop').mkdir()
             config = root / 'desktop/config.local.toml'
             config.write_text('device="cpu"\n')
@@ -97,7 +97,7 @@ class InstallationTests(unittest.TestCase):
     def test_dry_run_does_not_create_environments_or_download(self):
         setup = script('setup')
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             (root / 'desktop').mkdir()
             (root / 'desktop/config.toml').write_text((ROOT / 'desktop/config.toml').read_text())
             weights = root / 'models/collector-number/rfdetr-small.pth'
@@ -113,7 +113,7 @@ class InstallationTests(unittest.TestCase):
     def test_source_bundle_excludes_personal_data_weights_and_signing_material(self):
         pack = script('package_source')
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             allowed = ['README.md', 'LICENSE', '.gitattributes', 'models/collector-number/rfdetr-small.json',
                        'models/collector-number/SHA256SUMS', 'desktop/config.toml', 'desktop/tcg_scanner/server.py',
                        'mobile/android/gradle/wrapper/gradle-wrapper.jar']
@@ -165,7 +165,7 @@ class InstallationTests(unittest.TestCase):
         launcher = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(launcher)
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             python = venv_python(root / '.venv')
             python.parent.mkdir(parents=True)
             python.touch()

@@ -1,6 +1,6 @@
 """Offline integration tests: real image decoding/files/SQLite, simulated HTTP."""
 from collections import Counter
-from contextlib import redirect_stdout
+from contextlib import closing, redirect_stdout
 from dataclasses import replace
 from io import BytesIO, StringIO
 import json
@@ -46,7 +46,7 @@ class FakeHTTP:
             if isinstance(value, list):
                 value = value.pop(0)
         if value is None:
-            raise HTTPError(url, 404, "Not Found", {}, None)
+            raise HTTPError(url, 404, "Not Found", {}, BytesIO())
         if isinstance(value, Exception):
             raise value
         if isinstance(value, dict):
@@ -345,7 +345,7 @@ class PipelineTests(unittest.TestCase):
             first = self.db.cached_json(Client(self.config), url, 0)
         def not_modified(request, timeout):
             self.assertEqual(request.get_header("If-none-match"), '"v1"')
-            raise HTTPError(url, 304, "Not modified", {}, None)
+            raise HTTPError(url, 304, "Not modified", {}, BytesIO())
         with patch("tcg_scanner.api.urlopen", not_modified):
             self.assertEqual(self.db.cached_json(Client(self.config), url, 0), first)
 
@@ -356,7 +356,7 @@ class MigrationTests(unittest.TestCase):
         from tcg_scanner.db import SCHEMA
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "metadata.sqlite3"
-            with sqlite3.connect(path) as c:
+            with closing(sqlite3.connect(path)) as c, c:
                 c.executescript(SCHEMA + "PRAGMA user_version=1;")
                 c.execute("INSERT INTO sets VALUES ('en','sv01','Set',NULL,NULL,'{}')")
                 c.execute("""INSERT INTO cards(id,language,card_id,set_id,brief_json,local_image_path)
@@ -368,7 +368,7 @@ class MigrationTests(unittest.TestCase):
                 self.assertEqual(db.card("en", "sv01-001")["local_image_path"], "images/en/sv01/a.png")
                 with self.assertRaises(ValueError):
                     Database(path)
-                with sqlite3.connect(str(path) + ".v1.bak") as backup:
+                with closing(sqlite3.connect(str(path) + ".v1.bak")) as backup:
                     self.assertEqual(backup.execute("PRAGMA user_version").fetchone()[0], 1)
                     self.assertEqual(backup.execute("SELECT id FROM cards").fetchone()[0], 42)
             finally:
@@ -396,8 +396,8 @@ class RequestTests(unittest.TestCase):
     def test_transient_errors_and_retry_after(self):
         url = "https://api.tcgdex.net/test"
         client = Client(Config(retries=3, backoff=1, requests_per_second=1000000))
-        failures = [HTTPError(url, 429, "Rate limit", {"Retry-After": "5"}, None),
-                    HTTPError(url, 503, "Unavailable", {}, None), URLError("offline"),
+        failures = [HTTPError(url, 429, "Rate limit", {"Retry-After": "5"}, BytesIO()),
+                    HTTPError(url, 503, "Unavailable", {}, BytesIO()), URLError("offline"),
                     Response(b'{"ok": true}')]
         with patch("tcg_scanner.api.urlopen", side_effect=failures), \
                 patch.object(client, "pause") as pause, patch("tcg_scanner.api.random.uniform", return_value=0):
@@ -408,7 +408,7 @@ class RequestTests(unittest.TestCase):
     def test_nonretryable_and_exhausted_errors(self):
         for status, attempts in [(404, 1), (500, 3)]:
             client = Client(Config(retries=2, backoff=0, requests_per_second=1000000))
-            with patch("tcg_scanner.api.urlopen", side_effect=HTTPError("https://x", status, "error", {}, None)) as mock:
+            with patch("tcg_scanner.api.urlopen", side_effect=HTTPError("https://x", status, "error", {}, BytesIO())) as mock:
                 with self.assertRaises(FetchError):
                     client.get("https://x")
             self.assertEqual(mock.call_count, attempts)
@@ -442,7 +442,7 @@ class RequestTests(unittest.TestCase):
             path = folder / 'config.toml'
             path.write_text('data_dir = "../data"\n')
             with patch.dict("os.environ", {}, clear=True):
-                self.assertEqual(Config.load(path, {}).root, Path(tmp) / 'data')
+                self.assertEqual(Config.load(path, {}).root, Path(tmp).resolve() / 'data')
                 self.assertEqual(Config.load(path, {'data_dir':'custom'}).root, Path('custom').resolve())
             with patch.dict("os.environ", {'TCG_DATA_DIR':'environment'}, clear=True):
                 self.assertEqual(Config.load(path, {}).root, Path('environment').resolve())
