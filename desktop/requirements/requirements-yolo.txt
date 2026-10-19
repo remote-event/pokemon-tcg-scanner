@@ -1,0 +1,3 @@
+# Install alongside requirements-gpu.txt or requirements.txt.
+ultralytics==8.4.178
+opencv-python==5.0.0.93

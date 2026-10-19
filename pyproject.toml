@@ -1,0 +1,7 @@
+[tool.ruff]
+target-version = "py311"
+extend-exclude = ["artifacts", "data", "mobile", ".venv", ".venvs"]
+
+[tool.ruff.lint]
+# Catch invalid syntax, undefined names and unused imports without rewriting existing formatting.
+select = ["E9", "F63", "F7", "F82", "F401"]

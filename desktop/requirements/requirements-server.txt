@@ -1,0 +1,6 @@
+# API/runtime versions exercised by the regression suite.
+fastapi==0.143.3
+starlette==1.8.0
+uvicorn==0.54.0
+websockets==16.1.1
+zeroconf==0.151.5

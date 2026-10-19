@@ -1,0 +1,3 @@
+# Optional: exporting the Android detector from the upstream YOLO checkpoint.
+onnx>=1.17,<2
+onnxruntime>=1.25.1,<2

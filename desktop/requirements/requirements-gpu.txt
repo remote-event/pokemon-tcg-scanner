@@ -1,0 +1,4 @@
+# Linux x86_64 / Python 3.10-3.13; community GPU wheel, CUDA 12.1 runtime.
+# Do not install alongside faiss-cpu (both provide the faiss module).
+-r requirements-base.txt
+faiss-gpu-cu12[fix-cuda]==1.14.1.post1

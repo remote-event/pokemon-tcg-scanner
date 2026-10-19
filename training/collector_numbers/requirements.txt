@@ -1,0 +1,4 @@
+# Install CUDA PyTorch separately; see README.md.
+rfdetr[train]==1.11.2
+Pillow==12.3.0
+matplotlib>=3.8,<4

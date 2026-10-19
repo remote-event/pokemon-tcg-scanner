@@ -1,0 +1,10 @@
+Card-corner model: duclvQ/tcg-card-detector, card_pose_yolov8n.pt
+Source: https://huggingface.co/duclvQ/tcg-card-detector
+The existing Ultralytics YOLOv8 pose checkpoint is exported to ONNX without retraining.
+License: AGPL-3.0 (model source and Ultralytics).
+Source implementation: https://github.com/ultralytics/ultralytics
+Export command and preprocessing: desktop/tools/export_phone_detector.py
+Checkpoint and exported-model hashes: card_pose_yolov8n.json
+
+ONNX Runtime Android is licensed under MIT:
+https://github.com/microsoft/onnxruntime/blob/main/LICENSE

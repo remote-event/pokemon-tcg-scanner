@@ -1,0 +1,45 @@
+# Shared defaults. Copy to config.local.toml for your installation.
+# Environment variables named TCG_<UPPERCASE_KEY> override these values.
+data_dir = "../data"
+language = "en"
+api_base = "https://api.tcgdex.net/v2"
+concurrency = 4
+requests_per_second = 4.0
+timeout = 30.0
+retries = 4
+backoff = 1.0
+metadata_ttl_hours = 168.0
+catalog_ttl_hours = 24.0
+image_format = "png"
+# All Scarlet & Violet sets, plus physical sets released on/after this date.
+since = "2023-03-31"
+
+# Model revision is pinned so new catalogs use a reproducible backbone.
+model_name = "facebook/dinov2-small"
+model_revision = "ed25f3a31f01632728cabb09d1542f84ab7b0056"
+batch_size = 8
+device = "auto"
+cpu_threads = 4
+
+# setup.sh selects CUDA FAISS for GPU installations.
+faiss_device = "cpu"
+
+# Locate one card and straighten it; --crop none bypasses for prepared scans.
+crop = "yolo"
+detector_confidence = 0.5
+
+# Existing RF-DETR number detector + PaddleOCR TextRecognition only.
+# Enable with setup.sh --collector-weights /path/to/checkpoint.pth.
+ocr = "none"
+ocr_device = "cpu"
+ocr_python = "../.venvs/paddle/bin/python"
+ocr_model = "en_PP-OCRv5_mobile_rec"
+ocr_confidence = 0.85
+collector_python = "../.venvs/collector/bin/python"
+collector_weights = "models/collector-number/rfdetr-small.pth"
+collector_confidence = 0.5
+collector_padding = 0.12
+inference_mode = "concurrent"
+visual_confidence = 0.80
+visual_margin = 0.015
+ocr_visual_tolerance = 0.03

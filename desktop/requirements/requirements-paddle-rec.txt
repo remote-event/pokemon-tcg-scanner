@@ -1,0 +1,4 @@
+# Separate environment from the server and RF-DETR (incompatible dependencies).
+# Install paddlepaddle-gpu==3.2.0 from Paddle's CUDA 12.6 wheel index first.
+paddleocr==3.2.0
+paddlex==3.2.1

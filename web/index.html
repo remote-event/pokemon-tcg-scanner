@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>pokemon-tcg-scanner · Collections</title><link rel="stylesheet" href="/web/gallery.css"><script src="/web/gallery.js" defer></script></head>
+<body>
+<header><div><p class="eyebrow">TCG SCANNER</p><h1 id="page-title">Collections</h1><p id="description" class="muted">Choose a collection on your phone or here, then start scanning.</p></div><div class="connection"><span id="status" role="status">Connecting…</span><p id="active" class="muted"></p><p id="count" class="muted"></p></div></header>
+<main>
+<nav id="actions" aria-label="Collection actions"><button id="back" hidden>All collections</button><button id="create" class="primary">New collection</button><button id="continue" hidden>Scan into this collection</button><button id="export" hidden>Export ZIP</button><button id="rename" hidden>Rename</button><button id="delete-collection" class="danger" hidden>Delete collection</button></nav>
+<p id="error" role="alert" hidden></p>
+<section id="pending-scans" aria-label="Cards awaiting confirmation" hidden></section>
+<div id="scan-tools" hidden><label>Search cards <input id="search" type="search" placeholder="Name, set or card number"></label><div class="toolbar"><button id="select-all">Select loaded scans</button><span id="selection-count">0 selected</span><button id="bulk-move" disabled>Move selected</button><button id="bulk-delete" class="danger" disabled>Delete selected</button></div></div>
+<p id="empty" class="empty">Loading collections…</p><section id="gallery" aria-label="Collections"></section><button id="more" hidden>Load more scans</button>
+</main>
+<dialog id="detail"><div class="dialog-heading"><div><h2 id="detail-name"></h2><p id="detail-info" class="muted"></p></div><button id="close">Close</button></div><div id="detail-images" class="pair"></div><div id="detail-price"></div><div class="toolbar"><button id="edit" class="primary">Edit details</button><button id="move">Move</button><button id="delete" class="danger">Delete scan</button></div></dialog>
+<dialog id="form-dialog"><form id="form"><h2 id="form-title"></h2><div id="fields"></div><p id="form-error" role="alert"></p><div class="toolbar"><button type="button" id="cancel">Cancel</button><button type="submit" class="primary" id="save">Save changes</button></div></form></dialog>
+<footer>Stored on your desktop · Every scan is a separate entry · Local Wi-Fi</footer>
+</body></html>

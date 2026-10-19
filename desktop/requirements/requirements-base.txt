@@ -1,0 +1,7 @@
+# These versions participate in the reference-embedding fingerprint.
+Pillow==12.3.0
+numpy>=1.26,<3
+torch==2.14.1
+torchvision==0.29.1
+transformers==4.57.6
+filelock>=3.16,<4
