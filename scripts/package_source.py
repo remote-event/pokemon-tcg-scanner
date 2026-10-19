@@ -30,7 +30,8 @@ def sources(root):
                     continue
                 relative = path.relative_to(root).as_posix()
                 binary = relative in {'mobile/android/gradle/wrapper/gradle-wrapper.jar',
-                                      'mobile/android/app/src/main/res/raw/scan_ding.wav'}
+                                      'mobile/android/app/src/main/res/raw/scan_ding.wav',
+                                      'docs/images/collections.png', 'docs/images/card-details.png'}
                 if path.suffix in SUFFIXES or name in {'gradlew', '.gitignore', 'SHA256SUMS'} or binary:
                     yield path
 

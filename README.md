@@ -7,10 +7,23 @@ Your computer identifies each card over your local network.
 - **Manage your collection** in a browser: search, edit, and review uncertain matches.
 - **Export your cards** as a ZIP with JSON metadata and the original scanned images.
 
-[Quick start](#quick-start) · [Using the scanner](#using-the-scanner) ·
+[Quick start](#quick-start) · [Screenshots](#screenshots) · [Using the scanner](#using-the-scanner) ·
 [Configuration](#configuration-and-storage) · [Models and dataset](#models-and-dataset) ·
 [Android builds](#building-the-android-app) · [Training](#training-your-own-detector) ·
 [Development](#development-and-testing)
+
+## Screenshots
+
+The web interface with a demo collection using photos from the included dataset.
+
+![Web collection showing Pikachu, Charmander, Gengar, and Snorlax, with search and ZIP export controls](docs/images/collections.png)
+
+<details>
+<summary>Card details: compare the saved scan with the catalog image</summary>
+
+![Pikachu card details showing the scanned photo beside the reference image, with edit, move, and delete controls](docs/images/card-details.png)
+
+</details>
 
 ## How a scan works
 
