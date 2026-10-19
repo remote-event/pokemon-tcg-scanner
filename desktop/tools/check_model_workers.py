@@ -35,6 +35,8 @@ def main():
         recognition = reader.recognizer.recognize(crop)
         if 'boxes' not in detection or 'lines' not in recognition:
             raise RuntimeError('Inference worker returned an unexpected response')
+        if not any(line['text'] == '123/456' and line['score'] >= 0.8 for line in recognition['lines']):
+            raise RuntimeError(f'Recognition check failed: {recognition["lines"]}')
         print(json.dumps({'ready': ready, 'recognition': recognition['lines'],
                           'detection_ms': detection['detection_ms']}))
     finally:

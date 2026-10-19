@@ -30,9 +30,10 @@ def main():
             if device.startswith("gpu") and not paddle.is_compiled_with_cuda():
                 raise RuntimeError("PaddlePaddle has no CUDA support")
             paddle.set_device(device)
-            probe = paddle.ones([2, 2]) @ paddle.ones([2, 2])
-            if float(probe.numpy()[0, 0]) != 2:
-                raise RuntimeError("OCR device check failed")
+            if device.startswith("gpu"):
+                probe = paddle.ones([2, 2]) @ paddle.ones([2, 2])
+                if float(probe.numpy()[0, 0]) != 2:
+                    raise RuntimeError("OCR device check failed")
             local = {}
             if os.environ.get("TCG_OFFLINE") == "1":
                 cache = Path("~/.paddlex/official_models").expanduser()

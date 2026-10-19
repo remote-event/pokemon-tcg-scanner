@@ -13,6 +13,8 @@ def main():
     # Locate packages without loading either native runtime into this process.
     torch = Path(importlib.util.find_spec('torch').origin).parent
     faiss = Path(importlib.util.find_spec('faiss').origin).parent
+    if any(not package.resolve().is_relative_to(Path(sys.prefix).resolve()) for package in (torch, faiss)):
+        raise RuntimeError('Both packages must be installed inside this virtual environment')
     shared = torch / 'lib/libomp.dylib'
     bundled = faiss / '.dylibs/libomp.dylib'
     if not shared.is_file() or not bundled.is_file():

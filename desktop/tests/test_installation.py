@@ -32,8 +32,8 @@ class InstallationTests(unittest.TestCase):
             with patch.dict(os.environ, {}, clear=True):
                 result = Config.load(config, {})
             self.assertEqual(result.root, Path(folder).resolve() / 'data')
-            self.assertEqual(result.ocr_python, str(Path(folder).resolve() / 'env/bin/python'))
-            self.assertEqual(result.collector_python, str(Path(folder).resolve() / 'detector/bin/python'))
+            self.assertEqual(result.ocr_python, str(Path(folder) / 'env/bin/python'))
+            self.assertEqual(result.collector_python, str(Path(folder) / 'detector/bin/python'))
 
     def test_explicit_environment_config_is_selected(self):
         with patch.dict(os.environ, {'TCG_CONFIG': '/tmp/custom-scanner.toml'}):

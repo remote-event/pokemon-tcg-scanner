@@ -12,6 +12,13 @@ from .images import atomic_write, inspect_image
 log = logging.getLogger(__name__)
 
 
+def faiss_cuda_available():
+    # Recent macOS wheels expose Metal through the same resource class name.
+    # Our CUDA adapter requires the CUDA resource API, not just a GPU count.
+    return (hasattr(getattr(faiss, 'StandardGpuResources', None), 'setTempMemory')
+            and faiss.get_num_gpus() > 0)
+
+
 def normalized(vector, dimension):
     v = np.asarray(vector, dtype="float32")
     if v.shape != (dimension,) or not np.isfinite(v).all():
@@ -206,7 +213,7 @@ class SearchIndex:
         if device == "cpu":
             return
         try:
-            if not hasattr(faiss, "StandardGpuResources") or faiss.get_num_gpus() < 1:
+            if not faiss_cuda_available():
                 raise RuntimeError("GPU-enabled FAISS and an accessible NVIDIA GPU are required")
             self.resources = faiss.StandardGpuResources()
             self.resources.setTempMemory(64 * 1024 * 1024)

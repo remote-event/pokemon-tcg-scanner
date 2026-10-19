@@ -18,7 +18,7 @@ from tcg_scanner.__main__ import main
 from tcg_scanner.config import Config
 from tcg_scanner.db import Database
 from tcg_scanner.evaluation import IdentificationSession, evaluate_image, identify_image, report_path, save_report
-from tcg_scanner.vectors import SearchIndex, VectorStore
+from tcg_scanner.vectors import SearchIndex, VectorStore, faiss_cuda_available
 
 
 class QueryEmbedder:
@@ -234,8 +234,7 @@ class EvaluationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "faiss_device"):
             Config(faiss_device="invalid")
 
-    @unittest.skipUnless(hasattr(faiss, "StandardGpuResources") and faiss.get_num_gpus() > 0,
-                         "GPU FAISS and a GPU required")
+    @unittest.skipUnless(faiss_cuda_available(), "CUDA FAISS and an NVIDIA GPU required")
     def test_gpu_cpu_agreement_with_sparse_ids_and_persistence(self):
         # Remove a middle ID to ensure GPU row offsets are never mistaken for SQLite IDs.
         with self.db.conn:

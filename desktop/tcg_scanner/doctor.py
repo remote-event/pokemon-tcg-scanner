@@ -23,8 +23,8 @@ def check(config):
         needs_cuda = config.device == 'cuda' or config.faiss_device == 'cuda'
         record('CUDA', not needs_cuda or torch.cuda.is_available(),
                torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU only')
-        import faiss
-        record('FAISS GPU', config.faiss_device != 'cuda' or hasattr(faiss, 'StandardGpuResources'), config.faiss_device)
+        from .vectors import faiss_cuda_available
+        record('FAISS GPU', config.faiss_device != 'cuda' or faiss_cuda_available(), config.faiss_device)
     except (ImportError, OSError, RuntimeError) as exc:
         record('compute runtime', False, exc)
     database = config.root / 'metadata.sqlite3'
