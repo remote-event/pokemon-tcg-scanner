@@ -9,12 +9,13 @@ PaddleOCR. Users do not need to train a model.
 | --- | --- | --- |
 | Windows x64 | NVIDIA CUDA or CPU | CPU |
 | Linux x64, including WSL2 | NVIDIA CUDA or CPU | GPU with CUDA, otherwise CPU |
-| Linux ARM64 | CPU | CPU |
 | macOS 14+ on Apple silicon | CPU | CPU |
 
 Use native ARM64 Python on Apple silicon. The pinned PyTorch wheels do not support
 Intel macOS or Windows ARM64, so these are not advertised as native installation
-targets. Apple MPS and AMD/Intel GPU acceleration are not enabled by this installer.
+targets. Linux ARM64 is also excluded: clean-install inference tests crash inside
+PaddlePaddle 3.2.x even though its ARM wheel installs successfully.
+Apple MPS and AMD/Intel GPU acceleration are not enabled by this installer.
 CPU mode keeps both recognition paths but is slower; live scanning performance
 depends on the computer. Training remains an independent NVIDIA CUDA workflow.
 
@@ -55,7 +56,7 @@ The existing Bash launchers remain available on Linux/WSL/macOS.
   on your private network. Some binary packages require the Microsoft Visual C++
   Redistributable. WSL is not needed for native installation.
 - **Linux:** install Python's `venv` support. Minimal Ubuntu installations also
-  need `libgl1` and `libglib2.0-0` for OpenCV. Linux ARM64 uses CPU packages.
+  need `libgl1` and `libglib2.0-0` for OpenCV.
 - **macOS:** use macOS 14+ and ARM64 Python on Apple silicon. Dependencies come
   from PyPI without CUDA libraries. Setup links FAISS to PyTorch’s bundled OpenMP
   library to prevent conflicting runtimes. After reinstalling either wheel, run
@@ -70,6 +71,6 @@ Windows Android Studio, the older `mobile/build.sh` wrapper remains available.
 ## Validation
 
 CI installs the full CPU pipeline, runs backend tests and starts both real model
-workers on Windows x64, Linux x64/ARM64 and macOS ARM64. These checks validate
+workers on Windows x64, Linux x64 and macOS ARM64. These checks validate
 installation and inference; they do not measure real-time performance or test all
 GPU/driver combinations. Local CUDA regression checks remain separate.

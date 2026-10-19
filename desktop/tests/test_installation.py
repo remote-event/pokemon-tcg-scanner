@@ -138,7 +138,7 @@ class InstallationTests(unittest.TestCase):
             ('Windows', 'AMD64', 'cuda', 'cpu', 'cu130'),
             ('Windows', 'AMD64', 'cpu', 'cpu', 'cpu'),
             ('Linux', 'x86_64', 'cuda', 'cuda', 'cu130'),
-            ('Linux', 'aarch64', 'cpu', 'cpu', None),
+            ('Linux', 'x86_64', 'cpu', 'cpu', 'cpu'),
             ('Darwin', 'arm64', 'cpu', 'cpu', None),
         ]:
             with self.subTest(system=system, machine=machine, device=device):
@@ -158,6 +158,8 @@ class InstallationTests(unittest.TestCase):
             runtime_plan('cuda', 'Darwin', 'arm64')
         with self.assertRaisesRegex(ValueError, 'No supported dependency set'):
             runtime_plan('cpu', 'Darwin', 'x86_64')
+        with self.assertRaisesRegex(ValueError, 'No supported dependency set'):
+            runtime_plan('cpu', 'Linux', 'aarch64')
         self.assertEqual(venv_python(Path('env'), 'Windows'), Path('env/Scripts/python.exe'))
 
     def test_launcher_preserves_arguments_and_uses_native_environment(self):

@@ -13,9 +13,9 @@ def runtime_plan(device='auto', system=None, machine=None):
     system = system or platform.system()
     machine = (machine or platform.machine()).lower()
     arch = {'amd64': 'x86_64', 'arm64': 'aarch64'}.get(machine, machine)
-    supported = {'Linux': {'x86_64', 'aarch64'}, 'Windows': {'x86_64'}, 'Darwin': {'aarch64'}}
+    supported = {'Linux': {'x86_64'}, 'Windows': {'x86_64'}, 'Darwin': {'aarch64'}}
     if arch not in supported.get(system, set()):
-        raise ValueError(f'No supported dependency set for {system} {machine}. Use Linux x86_64/ARM64, Windows x64, or macOS 14+ with Apple silicon.')
+        raise ValueError(f'No supported dependency set for {system} {machine}. Use Linux x86_64, Windows x64, or macOS 14+ with Apple silicon.')
     if device == 'auto':
         device = 'cpu'
         if system in {'Linux', 'Windows'} and arch == 'x86_64' and shutil.which('nvidia-smi'):
@@ -30,7 +30,7 @@ def runtime_plan(device='auto', system=None, machine=None):
         raise ValueError('Device must be auto, cpu or cuda')
     if device == 'cuda' and (system not in {'Linux', 'Windows'} or arch != 'x86_64'):
         raise ValueError('This CUDA dependency set supports Linux x86_64 and Windows x64. Use --device cpu on this platform.')
-    torch_index = None if system == 'Darwin' or arch == 'aarch64' else (
+    torch_index = None if system == 'Darwin' else (
         'https://download.pytorch.org/whl/' + ('cu130' if device == 'cuda' else 'cpu'))
     return dict(system=system, architecture=arch, device=device,
                 faiss_device='cuda' if system == 'Linux' and device == 'cuda' else 'cpu',

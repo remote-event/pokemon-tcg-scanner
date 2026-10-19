@@ -33,7 +33,7 @@ model is included in the repository, and setup enables both matching paths.
 
 ## What you need
 
-- **Computer:** Windows x64, Linux x64/ARM64, or macOS 14+ on Apple silicon,
+- **Computer:** Windows x64, Linux x64, or macOS 14+ on Apple silicon,
   with Python 3.11/3.12. NVIDIA GPU acceleration is available on Windows and Linux x64;
   CPU mode runs the same identification pipeline.
 - **Git LFS:** required to clone the included model and training images.
