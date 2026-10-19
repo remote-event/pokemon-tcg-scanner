@@ -80,6 +80,24 @@ help distinguish cards with similar artwork across sets.
 available as a public download.** Visual matching works without it.
 [Enable collector-number recognition](docs/MODELS.md#enable-collector-number-recognition).
 
+## Models and technologies
+
+| Technology | What it does | Runs on |
+| --- | --- | --- |
+| YOLOv8n card detector + ONNX Runtime | Finds and crops the card before sending it | Android |
+| DINOv2 Small + PyTorch | Turns card artwork into a vector for visual matching | Server |
+| FAISS | Searches the reference catalog for visually similar cards | Server |
+| RF-DETR Small · optional | Locates the collector-number region | Server |
+| PaddleOCR `en_PP-OCRv5_mobile_rec` · optional | Reads characters from that crop; recognition only | Server |
+| Kotlin + Jetpack Compose + CameraX | Native app interface and camera capture | Android |
+| Python + FastAPI + WebSockets | Serves the API and handles live scans | Server |
+| SQLite | Stores catalog data and collections | Server |
+| HTML, CSS, and JavaScript | Collection management and exports | Browser |
+| TCGdex API | Supplies card metadata, reference artwork, and prices | External service |
+
+Only card detection runs on the phone; visual matching and optional OCR run on
+your computer. See [model details](docs/MODELS.md) for checkpoints and preparation.
+
 ## More information
 
 - [Backend configuration, storage, and commands](desktop/README.md)
