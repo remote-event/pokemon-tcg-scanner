@@ -25,6 +25,8 @@ scores, and the distinction between uncertain candidates and automatically saved
 cards. Add regression coverage for changes to matching, storage and protocol
 behavior. Avoid tests that merely restate an implementation or require a GPU in CI.
 
-Do not commit scan databases/photos, model weights, local settings, signing keys,
-training runs or logs. New public assets need provenance and license information.
+Personal scan databases/photos, local model experiments, settings, signing keys,
+training runs and logs stay ignored. The published checkpoint and training images
+are explicitly tracked with Git LFS; update their checksums and dataset provenance
+when changing them. New public assets need provenance and license information.
 Describe the user-visible problem, final behavior and relevant validation in PRs.

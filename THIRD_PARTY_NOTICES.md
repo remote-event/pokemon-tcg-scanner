@@ -25,12 +25,14 @@ under the upstream Gradle license, Apache-2.0.
 Model provenance, immutable upstream revisions and exported-model hashes are
 recorded in [model setup](docs/MODELS.md) and
 `mobile/android/app/src/main/assets/card_pose_yolov8n.json`.
-The project's fine-tuned collector checkpoint is a separate local artifact;
-its training-data provenance and distribution terms must accompany a future
-model release. It is not included in the MIT source archive.
+The project's fine-tuned RF-DETR Small checkpoint and its labeled training images
+are included through Git LFS. See the [model card](models/collector-number/README.md)
+and [dataset documentation](training/collector_numbers/dataset/README.md) for
+provenance, preprocessing and checksums. RF-DETR's upstream Apache-2.0 terms
+remain applicable; the code's MIT license does not relicense card artwork.
 
 Pokémon card names, artwork and trademarks belong to their respective owners.
 This project is not affiliated with or endorsed by The Pokémon Company,
-Nintendo, Game Freak or Creatures. Personal scan photos are excluded from source
-bundles. Review the AGPL dependencies and model notices before publishing a
+Nintendo, Game Freak or Creatures. The explicitly published training dataset contains card images; other personal
+collection scans and databases are excluded from the repository. Review the AGPL dependencies and model notices before publishing a
 combined executable or APK; copying only this MIT license is insufficient.

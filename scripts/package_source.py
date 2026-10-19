@@ -6,8 +6,8 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TOP = {'README.md', 'LICENSE', 'CONTRIBUTING.md', 'SECURITY.md', 'THIRD_PARTY_NOTICES.md',
-       '.gitignore', 'pyproject.toml', 'setup.sh', 'start-server.sh'}
-DIRECTORIES = {'desktop', 'web', 'mobile', 'training', 'scripts', '.github', 'docs'}
+       '.gitignore', '.gitattributes', 'pyproject.toml', 'setup.sh', 'start-server.sh'}
+DIRECTORIES = {'desktop', 'web', 'mobile', 'training', 'scripts', '.github', 'docs', 'models'}
 EXCLUDE = {'build', '.gradle', '.kotlin', '__pycache__', 'node_modules', '.venv', '.venvs', '.idea', '.cxx'}
 SUFFIXES = {'.py', '.md', '.txt', '.toml', '.html', '.css', '.js', '.mjs', '.json', '.xml', '.kt',
             '.kts', '.sh', '.bat', '.ps1', '.properties', '.yml', '.yaml'}
@@ -31,7 +31,7 @@ def sources(root):
                 relative = path.relative_to(root).as_posix()
                 binary = relative in {'mobile/android/gradle/wrapper/gradle-wrapper.jar',
                                       'mobile/android/app/src/main/res/raw/scan_ding.wav'}
-                if path.suffix in SUFFIXES or name in {'gradlew', '.gitignore'} or binary:
+                if path.suffix in SUFFIXES or name in {'gradlew', '.gitignore', 'SHA256SUMS'} or binary:
                     yield path
 
 
@@ -45,6 +45,7 @@ def main(argv=None):
         for path in paths:
             archive.write(path, 'pokemon-tcg-scanner/' + path.relative_to(ROOT).as_posix())
     print(f'{len(paths)} source files: {args.output}')
+    print('Source-only archive: clone with Git LFS to obtain the trained checkpoint and dataset images.')
     print('Review THIRD_PARTY_NOTICES.md and docs/RELEASING.md before publication.')
 
 

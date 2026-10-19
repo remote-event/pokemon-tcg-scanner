@@ -18,6 +18,7 @@ the final model and kernel validation. `/health` reflects the running server.
 | Model/preprocessing mismatch | Use the pinned dependency versions or regenerate references with `embed --existing --regenerate` |
 | CUDA unavailable | Check `nvidia-smi` inside the same Linux/WSL environment; the selected wheels require a compatible NVIDIA driver |
 | GPU FAISS unavailable | Install `requirements-gpu.txt`; do not mix it with `faiss-cpu` |
+| Missing collector checkpoint or Git LFS pointer | Install Git LFS and run `git lfs pull` in the repository before setup |
 | OCR degraded | Check both configured worker executables, the trained checkpoint, Paddle cache, and startup logs |
 | Android build lacks detector | Run `scripts/prepare_models.py --android` before packaging |
 | Phone cannot discover server | Enter the server's private IPv4 in settings and check firewall/network isolation |

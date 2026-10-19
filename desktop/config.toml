@@ -29,14 +29,14 @@ crop = "yolo"
 detector_confidence = 0.5
 
 # Existing RF-DETR number detector + PaddleOCR TextRecognition only.
-# Enable with setup.sh --collector-weights /path/to/checkpoint.pth.
-ocr = "none"
+# setup.sh installs both recognition workers and uses the included checkpoint.
+ocr = "paddle"
 ocr_device = "cpu"
 ocr_python = "../.venvs/paddle/bin/python"
 ocr_model = "en_PP-OCRv5_mobile_rec"
 ocr_confidence = 0.85
 collector_python = "../.venvs/collector/bin/python"
-collector_weights = "models/collector-number/rfdetr-small.pth"
+collector_weights = "../models/collector-number/rfdetr-small.pth"
 collector_confidence = 0.5
 collector_padding = 0.12
 inference_mode = "concurrent"

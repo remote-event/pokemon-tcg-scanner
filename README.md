@@ -14,7 +14,7 @@ Your computer identifies each card over your local network.
 2. **Compare the artwork.** DINOv2 Small creates an image embedding—a numerical
    representation of the card. FAISS compares it with the reference catalog
    to find visually similar cards.
-3. **Read the collector number (optional).** In parallel, a trained RF-DETR Small
+3. **Read the collector number.** In parallel, a trained RF-DETR Small
    model finds the number region. PaddleOCR (`en_PP-OCRv5_mobile_rec`) reads only
    that small crop, without running another text detector.
 4. **Combine the evidence.** The number is checked against the entire card
@@ -27,15 +27,15 @@ Your computer identifies each card over your local network.
    review candidates in the browser. An unchanged accepted card is not repeatedly
    processed or saved.
 
-All AI after the initial card crop runs on your computer. **The quick start uses
-visual matching; optional OCR needs a trained collector-number checkpoint that
-is not yet available as a public download.**
+All AI after the initial card crop runs on your computer. The trained collector-number
+model is included in the repository, and setup enables both matching paths.
 [Model setup](docs/MODELS.md) · [Detailed matching process](desktop/HYBRID_SCANNING.md)
 
 ## What you need
 
 - **Computer:** Linux or WSL2, Python 3.11/3.12, and an NVIDIA GPU recommended
   for real-time scanning. CPU mode is also available.
+- **Git LFS:** required to clone the included model and training images.
 - **Phone:** Android 8.0+ on the same private network as your computer.
 - **Android build tools:** JDK 17, Android SDK 36, and ADB. There is no
   downloadable APK yet; you build the app yourself.
@@ -47,11 +47,13 @@ locally; card artwork and price lookups may still use the internet.
 
 ### 1. Set up the server
 
-Run in a Linux or WSL terminal:
+Install [Git LFS](https://git-lfs.com/) first, then run in a Linux or WSL terminal:
 
 ```bash
+git lfs install
 git clone https://github.com/remote-event/pokemon-tcg-scanner.git
 cd pokemon-tcg-scanner
+git lfs pull
 
 bash setup.sh --device cuda
 .venv/bin/python scripts/prepare_models.py
@@ -92,6 +94,13 @@ Hold one card steady in view. Confident matches save automatically; uncertain
 matches can be reviewed in the web interface.
 
 Next time, just run `bash start-server.sh` and open the app.
+
+## Training your own detector
+
+Training is separate from using the scanner. The repository includes the trained
+checkpoint, 500 labeled images, COCO annotations, and the original 70/20/10 split
+information. [Training instructions](training/collector_numbers/README.md) cover
+preparing the data, retraining RF-DETR Small, and saving graphs and metrics.
 
 ## More information
 

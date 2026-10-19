@@ -1,0 +1,4 @@
+/models/collector-number/rfdetr-small.pth filter=lfs diff=lfs merge=lfs -text
+/training/collector_numbers/dataset/*.jpg filter=lfs diff=lfs merge=lfs -text
+# Preserve the original COCO export bytes used by the dataset manifest checksum.
+/training/collector_numbers/dataset/_annotations.coco.json -text whitespace=cr-at-eol

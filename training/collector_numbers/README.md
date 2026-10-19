@@ -1,8 +1,8 @@
 # Optional collector-number training
 
-Fine-tune RF-DETR Small using your own COCO bounding-box dataset. This is separate
-from installing the scanner: use an existing compatible trained checkpoint for
-inference. Training does not deploy or replace server models automatically.
+Fine-tune RF-DETR Small using the included COCO dataset or your own labels. This is
+separate from installing the scanner: normal setup uses the included trained
+checkpoint for inference. Training does not deploy or replace server models automatically.
 
 ## Environment
 
@@ -21,15 +21,17 @@ Do not install training extras into the inference server or Paddle environment.
 
 ## Prepare data
 
-Use COCO images/annotations with the collector-number region labeled. The data
+The repository includes 500 original card images and 501 collector-number boxes
+in `training/collector_numbers/dataset/`. Run `git lfs pull` to obtain the images.
+The data
 preparation script performs EXIF auto-orientation, grayscale conversion into three
 RGB channels, and 512 × 512 stretch, with a seeded 70/20/10 train/validation/test
 split. Bounding boxes receive the same transforms.
 
 ```bash
 .venvs/training/bin/python training/collector_numbers/prepare.py \
-  --source /path/to/coco-export \
-  --collection /path/to/collection.json \
+  --source training/collector_numbers/dataset \
+  --collection training/collector_numbers/dataset/grouping.json \
   --output artifacts/collector-number-training/dataset \
   --resolution 512 --mode stretch
 ```
@@ -38,8 +40,11 @@ The optional collection JSON groups scans of the same card across the split;
 exact image duplicates also stay together. Omit `--collection` only if identities
 are unavailable. The script validates image/annotation references and boxes,
 refuses an existing output directory, and preserves originals. The generated
-manifest records hashes, preprocessing and split assignments. Keep datasets and
-manifests out of the public source repository.
+manifest records hashes, preprocessing and split assignments. With the included
+images and grouping file, this reproduces the saved `dataset/splits.json`: 350
+training images, 100 validation images and 50 test images. Preprocessed copies
+and new training outputs stay under ignored `artifacts/`. To use your own data,
+replace the source and collection paths above.
 
 ## Train and inspect
 

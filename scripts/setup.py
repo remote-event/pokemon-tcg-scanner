@@ -1,5 +1,6 @@
 """Install a Linux/WSL checkout; model downloads and catalog building are explicit steps."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import platform
@@ -24,18 +25,34 @@ def environment(directory):
     return python
 
 
-def configuration(device, weights=None):
+def configuration(device, weights=None, visual_only=False):
     values = tomllib.loads((ROOT / 'desktop/config.toml').read_text())
     values.update(device=device, faiss_device=device, ocr_device='gpu:0' if device == 'cuda' else 'cpu')
-    if weights:
-        values.update(ocr='paddle', collector_weights=str(weights.resolve()))
+    weights = weights or ROOT / 'models/collector-number/rfdetr-small.pth'
+    values.update(ocr='none' if visual_only else 'paddle', collector_weights=str(weights.resolve()))
     return values
+
+
+def validate_checkpoint(path, bundled=False):
+    if not path.is_file():
+        raise ValueError(f'Collector checkpoint not found: {path}. Run git lfs install && git lfs pull from the repository, or supply --collector-weights PATH.')
+    with path.open('rb') as stream:
+        if stream.read(128).startswith(b'version https://git-lfs.github.com/spec/v1'):
+            raise ValueError(f'{path} is a Git LFS pointer, not model weights. Run git lfs install && git lfs pull.')
+    if bundled:
+        metadata = json.loads(path.with_suffix('.json').read_text())
+        with path.open('rb') as stream:
+            digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+        if digest != metadata['sha256']:
+            raise ValueError('Bundled collector checkpoint checksum mismatch. Restore it with git lfs pull before setup.')
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--device', choices=('cpu', 'cuda'), required=True)
-    parser.add_argument('--collector-weights', type=Path, help='Existing trusted RF-DETR Small collector-number checkpoint; no training')
+    models = parser.add_mutually_exclusive_group()
+    models.add_argument('--collector-weights', type=Path, help='Override the included RF-DETR Small collector-number checkpoint; no training')
+    models.add_argument('--visual-only', action='store_true', help='Explicitly disable collector-number recognition and install visual matching only')
     parser.add_argument('--dry-run', action='store_true', help='Show the install plan without downloading or changing files')
     args = parser.parse_args(argv)
     if sys.version_info[:2] not in ((3, 11), (3, 12)):
@@ -45,14 +62,18 @@ def main(argv=None):
     local = ROOT / 'desktop/config.local.toml'
     if local.exists():
         parser.error(f'{local} already exists. It was preserved. Use the dependency commands in desktop/README.md to update an existing installation.')
-    weights = args.collector_weights.expanduser() if args.collector_weights else None
-    if weights and not weights.is_file():
-        parser.error(f'Collector checkpoint not found: {weights}')
+    weights = None if args.visual_only else (args.collector_weights.expanduser() if args.collector_weights
+                                            else ROOT / 'models/collector-number/rfdetr-small.pth')
+    if weights:
+        try:
+            validate_checkpoint(weights, bundled=args.collector_weights is None)
+        except (ValueError, OSError, KeyError) as exc:
+            parser.error(str(exc))
     if args.device == 'cuda' and not args.dry_run:
         if not shutil.which('nvidia-smi'):
             parser.error('nvidia-smi is unavailable. Install a working NVIDIA driver first, or choose --device cpu.')
         command('nvidia-smi', '--query-gpu=name,driver_version', '--format=csv,noheader')
-    values = configuration(args.device, weights)
+    values = configuration(args.device, weights, visual_only=args.visual_only)
     if args.dry_run:
         print(json.dumps({'device': args.device, 'server_env': str(ROOT / '.venv'),
                           'ocr': values['ocr'], 'config': str(local),

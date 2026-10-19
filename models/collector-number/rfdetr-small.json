@@ -1,0 +1,19 @@
+{
+  "source": "checkpoint_best_total.pth from the project RF-DETR Small training run",
+  "sha256": "c5e4a19c65c6b5daa15007f504691553092f076ef1110a6b75263ef8948df79e",
+  "model": "RF-DETR Small",
+  "preprocessing": [
+    "auto-orient",
+    "grayscale",
+    "512x512 stretch"
+  ],
+  "dataset": "training/collector_numbers/dataset",
+  "bytes": 127363541,
+  "split_counts": {
+    "valid": 100,
+    "test": 50,
+    "train": 350
+  },
+  "source_sha256": "9740ef0ec84ba2cb048a858bfb4b6c97db914b20495a09c665789e80b8c2293f",
+  "export": "Inference weights and architecture metadata only; tensors unchanged; removed training state and absolute workstation paths."
+}

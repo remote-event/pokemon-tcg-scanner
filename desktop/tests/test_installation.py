@@ -1,8 +1,10 @@
 """Portable configuration and release boundaries; no downloads or GPU required."""
 from contextlib import redirect_stdout, redirect_stderr
 import importlib.util
+import hashlib
 from io import StringIO
 import os
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -48,13 +50,31 @@ class InstallationTests(unittest.TestCase):
             self.assertEqual(result.ocr_python, str(python))
             self.assertEqual(result.collector_python, str(python))
 
-    def test_install_plan_defaults_to_visual_and_can_enable_existing_checkpoint(self):
+    def test_install_plan_defaults_to_included_checkpoint_on_cpu_and_cuda(self):
         setup = script('setup')
         cpu = setup.configuration('cpu')
-        self.assertEqual((cpu['device'], cpu['faiss_device'], cpu['ocr']), ('cpu', 'cpu', 'none'))
+        self.assertEqual((cpu['device'], cpu['faiss_device'], cpu['ocr']), ('cpu', 'cpu', 'paddle'))
+        self.assertEqual(cpu['collector_weights'], str(ROOT / 'models/collector-number/rfdetr-small.pth'))
         gpu = setup.configuration('cuda', Path('/tmp/number-model.pth'))
         self.assertEqual((gpu['ocr'], gpu['ocr_device']), ('paddle', 'gpu:0'))
         self.assertEqual(gpu['collector_weights'], '/tmp/number-model.pth')
+        self.assertEqual(setup.configuration('cpu', visual_only=True)['ocr'], 'none')
+
+    def test_checkpoint_validation_rejects_missing_lfs_pointers_and_corruption(self):
+        setup = script('setup')
+        with tempfile.TemporaryDirectory() as folder:
+            weights = Path(folder) / 'rfdetr-small.pth'
+            with self.assertRaisesRegex(ValueError, 'git lfs'):
+                setup.validate_checkpoint(weights)
+            weights.write_bytes(b'version https://git-lfs.github.com/spec/v1\noid sha256:abc\nsize 1024\n')
+            with self.assertRaisesRegex(ValueError, 'Git LFS pointer'):
+                setup.validate_checkpoint(weights)
+            weights.write_bytes(b'checkpoint fixture')
+            weights.with_suffix('.json').write_text(json.dumps({'sha256': hashlib.sha256(weights.read_bytes()).hexdigest()}))
+            setup.validate_checkpoint(weights, bundled=True)
+            weights.write_bytes(b'damaged checkpoint')
+            with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
+                setup.validate_checkpoint(weights, bundled=True)
 
     def test_installer_preserves_existing_local_configuration(self):
         setup = script('setup')
@@ -75,6 +95,10 @@ class InstallationTests(unittest.TestCase):
             root = Path(folder)
             (root / 'desktop').mkdir()
             (root / 'desktop/config.toml').write_text((ROOT / 'desktop/config.toml').read_text())
+            weights = root / 'models/collector-number/rfdetr-small.pth'
+            weights.parent.mkdir(parents=True)
+            weights.write_bytes(b'checkpoint fixture')
+            weights.with_suffix('.json').write_text(json.dumps({'sha256': hashlib.sha256(weights.read_bytes()).hexdigest()}))
             with patch.object(setup, 'ROOT', root), patch.object(setup, 'command') as command, redirect_stdout(StringIO()):
                 self.assertEqual(setup.main(['--device', 'cpu', '--dry-run']), 0)
                 command.assert_not_called()
@@ -85,12 +109,14 @@ class InstallationTests(unittest.TestCase):
         pack = script('package_source')
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
-            allowed = ['README.md', 'LICENSE', 'desktop/config.toml', 'desktop/tcg_scanner/server.py',
+            allowed = ['README.md', 'LICENSE', '.gitattributes', 'models/collector-number/rfdetr-small.json',
+                       'models/collector-number/SHA256SUMS', 'desktop/config.toml', 'desktop/tcg_scanner/server.py',
                        'mobile/android/gradle/wrapper/gradle-wrapper.jar']
             forbidden = ['data/scan-history/history.sqlite3', 'artifacts/log.txt', 'desktop/config.local.toml',
                          'mobile/android/local.properties', 'mobile/android/build/output.json',
                          'mobile/android/app/src/main/assets/detector.onnx', 'mobile/android/key.jks',
                          'mobile/android/app/src/androidTest/assets/card-a.jpg', '.env', 'desktop/.env.local']
+            forbidden += ['models/collector-number/rfdetr-small.pth', 'training/collector_numbers/dataset/image.jpg']
             for name in allowed + forbidden:
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)

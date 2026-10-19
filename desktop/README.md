@@ -14,8 +14,8 @@ For GPU setup, `nvidia-smi` must work inside Linux/WSL and your NVIDIA driver
 must support the installer's CUDA 13.0 runtime.
 
 Setup downloads dependencies; model preparation and catalog sync download the
-remaining assets. Weights, reference databases and personal scans are not
-included in the repository. For a smaller first catalog, use
+remaining assets. The collector checkpoint and training images are included through Git LFS;
+reference databases and personal collection scans stay local. For a smaller first catalog, use
 `(cd desktop && ../.venv/bin/python -m tcg_scanner sync --set sv01)`.
 The default catalog starts with Scarlet & Violet; configure `since` or pass
 explicit `--set` options for other sets.
@@ -56,6 +56,9 @@ cp -n desktop/config.toml desktop/config.local.toml
 ```
 
 Set `device = "cuda"` and `faiss_device = "cuda"` for GPU use, or `"cpu"` for both.
+Shared defaults enable collector recognition; complete the worker setup below
+for a manual installation. `bash setup.sh --device cuda` performs both steps
+automatically on a new checkout.
 Model-preparation and catalog commands are in the root README. Dependency upgrades
 that alter DINOv2 preprocessing can require rebuilding reference embeddings;
 Pillow, Transformers and the model revision are pinned for that reason.
@@ -80,12 +83,16 @@ ocr = "paddle"
 ocr_device = "gpu:0"
 ocr_python = "../.venvs/paddle/bin/python"
 collector_python = "../.venvs/collector/bin/python"
-collector_weights = "/absolute/path/to/rfdetr-small.pth"
+collector_weights = "../models/collector-number/rfdetr-small.pth"
 ```
 
 Then run `.venv/bin/python scripts/prepare_models.py`. RF-DETR inference dependencies
 are separate from training extras and from the embedding and Paddle environments.
 The [architecture](HYBRID_SCANNING.md) explains why.
+
+To deliberately install only visual matching, use `--visual-only` on a new setup
+or set `ocr = "none"` in an existing local config. The normal pipeline uses both
+visual matching and collector-number recognition.
 
 ## Run and inspect
 
