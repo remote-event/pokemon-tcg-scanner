@@ -6,11 +6,14 @@ JDK 17 and Android SDK 36 are needed to build.
 
 ## Install the GitHub build
 
-Use the [Android APK workflow](https://github.com/remote-event/pokemon-tcg-scanner/actions/workflows/android-apk.yml).
-Choose a successful run and download the artifact under **Artifacts** (GitHub
-sign-in required). Extract it and install `pokemon-tcg-scanner.apk` on your phone.
-It includes the ONNX detector, so Android Studio and local model export are not
-needed. Artifacts are retained for 90 days; a maintainer can run the workflow again.
+[Download the latest APK](https://github.com/remote-event/pokemon-tcg-scanner/releases/latest/download/pokemon-tcg-scanner.apk)
+and open it on your phone. GitHub sign-in is not required. It includes the ONNX
+detector, so Android Studio and local model export are not needed.
+[GitHub Releases](https://github.com/remote-event/pokemon-tcg-scanner/releases)
+keeps versioned downloads and release notes.
+
+Development builds are also available from the [Android APK workflow](https://github.com/remote-event/pokemon-tcg-scanner/actions/workflows/android-apk.yml).
+Those Actions artifacts require sign-in and expire after 90 days.
 
 The workflow uses a persistent release key and increasing version codes so later
 builds can update earlier workflow APKs. It keeps the existing `dev.tcg.scanner`
@@ -19,8 +22,9 @@ be updated with the release APK in place. Preserve device-only data before
 changing installations; the workflow never uninstalls your app. Server-side
 collections remain in the server's scan-history storage.
 
-The download also contains checksums, the public signing-certificate fingerprint,
-license notices, matching app source, and the original phone model checkpoint.
+Each release includes `SHA256SUMS`, the public signing-certificate fingerprint,
+and `pokemon-tcg-scanner-sources.zip` with license notices, matching app source,
+and the original phone model checkpoint.
 See [maintainer signing setup](../docs/RELEASING.md#android-apk-workflow) for forks.
 
 ## Prepare and build

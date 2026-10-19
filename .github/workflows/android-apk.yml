@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    tags: ['v*']
     paths:
       - '.github/workflows/android-apk.yml'
       - 'mobile/android/**'
@@ -24,10 +25,20 @@ concurrency:
 
 jobs:
   apk:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
+      - name: Set release version
+        if: github.ref_type == 'tag'
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo '::error::Release tags must use vMAJOR.MINOR.PATCH, for example v1.1.5.'
+            exit 1
+          fi
+          echo "APK_VERSION_NAME=${RELEASE_TAG#v}" >> "$GITHUB_ENV"
       - name: Check signing configuration
         env:
           KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -81,15 +92,13 @@ jobs:
         env:
           SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}/tree/${{ github.sha }}
         run: |
-          python scripts/package_android_distribution.py
           python scripts/package_source.py --output dist/pokemon-tcg-scanner-source.zip
-          cd dist
-          sha256sum pokemon-tcg-scanner.apk pokemon-tcg-scanner-source.zip source-model/card_pose_yolov8n.pt > SHA256SUMS
+          python scripts/package_android_distribution.py
       - uses: actions/upload-artifact@v4
         id: download
         with:
           name: pokemon-tcg-scanner-android-${{ github.run_number }}
-          path: dist/
+          path: dist/release/
           if-no-files-found: error
           retention-days: 90
           compression-level: 0
@@ -98,3 +107,38 @@ jobs:
           ARTIFACT_URL: ${{ steps.download.outputs.artifact-url }}
         run: |
           echo "[Download the signed APK and source bundle]($ARTIFACT_URL)" >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    needs: apk
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pokemon-tcg-scanner-android-${{ github.run_number }}
+          path: dist
+      - name: Verify downloads
+        working-directory: dist
+        run: sha256sum --check SHA256SUMS
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          cat > "$RUNNER_TEMP/release-notes.md" <<EOF
+          Download **pokemon-tcg-scanner.apk** below and open it on an Android 8.0+ phone. The card detector is included; no Android build tools or GitHub sign-in are needed.
+
+          The app connects to a local computer running the scanner server. Follow the [setup guide]($REPOSITORY_URL/tree/$RELEASE_TAG#quick-start) for Windows, Linux, or macOS.
+
+          Updates use the same release signing key. A locally built debug app has a different signature and cannot be updated in place with this APK; see [installation details]($REPOSITORY_URL/blob/$RELEASE_TAG/mobile/README.md#install-the-github-build).
+
+          **pokemon-tcg-scanner-sources.zip** contains matching app source, the original phone model, and license notices. **SHA256SUMS** verifies the downloads; **signing-certificate.txt** records the public signing fingerprint. For the server model and training dataset, clone the repository with Git LFS as described in the setup guide.
+          EOF
+          gh release create "$RELEASE_TAG" dist/* --verify-tag --draft --title "pokemon-tcg-scanner $RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+          gh release edit "$RELEASE_TAG" --draft=false --latest
+          echo "[Download the release]($REPOSITORY_URL/releases/tag/$RELEASE_TAG)" >> "$GITHUB_STEP_SUMMARY"

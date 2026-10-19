@@ -38,7 +38,7 @@ model is included in the repository, and setup enables both matching paths.
   CPU mode runs the same identification pipeline.
 - **Git LFS:** required to clone the included model and training images.
 - **Phone:** Android 8.0+ on the same private network as your computer.
-- **Android app:** download the signed APK from [Android APK builds](https://github.com/remote-event/pokemon-tcg-scanner/actions/workflows/android-apk.yml).
+- **Android app:** download the signed APK from [GitHub Releases](https://github.com/remote-event/pokemon-tcg-scanner/releases/latest).
   JDK/Android SDK are only needed if you choose to build it yourself.
 
 Internet is needed for setup and card catalog downloads. Identification runs
@@ -77,16 +77,14 @@ browser and create a collection. Keep this terminal running.
 
 ### 2. Install the Android app
 
-Open [Android APK builds](https://github.com/remote-event/pokemon-tcg-scanner/actions/workflows/android-apk.yml),
-select the latest successful run, and download its **pokemon-tcg-scanner-android**
-artifact. Extract the ZIP and open `pokemon-tcg-scanner.apk` on your phone.
-Allow installation from your browser or file manager when Android asks.
-GitHub requires you to sign in to download Actions artifacts.
+[Download the latest APK](https://github.com/remote-event/pokemon-tcg-scanner/releases/latest/download/pokemon-tcg-scanner.apk)
+and open it on your phone. Allow installation from your browser or file manager
+when Android asks. No GitHub sign-in or build tools are needed.
 
-The APK includes the phone detector. GitHub builds it automatically when Android
-code changes; maintainers can also select **Run workflow**. The same release key
-is used for updates. Existing local debug installs use a different signing key;
-see [installation and build details](mobile/README.md#install-the-github-build).
+The APK includes the phone detector. [Release notes and checksums](https://github.com/remote-event/pokemon-tcg-scanner/releases/latest)
+are available with each version. Updates use the same release key. Existing local
+debug installs use a different signing key; see
+[installation details](mobile/README.md#install-the-github-build).
 
 [Build the app yourself](mobile/README.md#prepare-and-build)
 

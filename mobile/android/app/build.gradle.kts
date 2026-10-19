@@ -12,7 +12,8 @@ android {
         targetSdk = 36
         val ciBuild = providers.environmentVariable("APK_BUILD_NUMBER").orNull?.toInt()
         versionCode = ciBuild?.let { 1000 + it } ?: 23
-        versionName = ciBuild?.let { "1.1.5-build.$it" } ?: "1.1.5"
+        versionName = providers.environmentVariable("APK_VERSION_NAME").orNull
+            ?: ciBuild?.let { "1.1.5-build.$it" } ?: "1.1.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
