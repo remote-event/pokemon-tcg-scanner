@@ -6,8 +6,11 @@ checkpoint for inference. Training does not deploy or replace server models auto
 
 ## Environment
 
-From the repository root, on Linux/WSL with a working NVIDIA driver, C compiler
-and Python development headers:
+Training requires NVIDIA CUDA. The commands below show Linux/WSL setup; on
+native Windows, use `Scripts/python.exe` in place of `bin/python` and run
+`train.py --dataset PATH --output PATH` directly instead of the Bash launcher.
+Training dependencies may require a C compiler and Python development headers.
+From the repository root:
 
 ```bash
 python3 -m venv .venvs/training

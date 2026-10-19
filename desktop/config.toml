@@ -32,10 +32,9 @@ detector_confidence = 0.5
 # setup.sh installs both recognition workers and uses the included checkpoint.
 ocr = "paddle"
 ocr_device = "cpu"
-ocr_python = "../.venvs/paddle/bin/python"
+# Worker interpreter paths default to the platform's .venvs layout.
 ocr_model = "en_PP-OCRv5_mobile_rec"
 ocr_confidence = 0.85
-collector_python = "../.venvs/collector/bin/python"
 collector_weights = "../models/collector-number/rfdetr-small.pth"
 collector_confidence = 0.5
 collector_padding = 0.12

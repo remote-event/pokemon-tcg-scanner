@@ -4,7 +4,12 @@ permissions:
   contents: read
 jobs:
   backend:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-14, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -12,18 +17,28 @@ jobs:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: desktop/requirements/*.txt
-      - name: Install CPU test dependencies
+      - uses: actions/cache@v4
+        with:
+          path: .git/lfs/objects
+          key: collector-${{ hashFiles('models/collector-number/rfdetr-small.json') }}
+      - name: Fetch collector checkpoint
         run: |
-          python -m pip install torch==2.14.1 torchvision==0.29.1 --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install -r desktop/requirements/requirements.txt -r desktop/requirements/requirements-server.txt -r desktop/requirements/requirements-dev.txt
+          git lfs install --local
+          git lfs pull --include="models/collector-number/rfdetr-small.pth"
+      - name: Install full CPU pipeline
+        run: |
+          python scanner.py setup --device cpu
+          python scanner.py pip install -r desktop/requirements/requirements-dev.txt
       - name: Static checks
-        run: ruff check desktop scripts training
+        run: python scanner.py python -m ruff check desktop scripts training scanner.py mobile/build.py
       - name: Backend regression tests (no models or private catalog)
-        working-directory: desktop
-        run: python -B -m unittest discover -s tests
+        run: python scanner.py python -m unittest discover -s desktop/tests
       - name: Training utilities
-        run: python -B -m unittest discover -s training/collector_numbers -p 'test_*.py'
+        run: python scanner.py python -m unittest discover -s training/collector_numbers -p 'test_*.py'
+      - name: Real collector and recognition workers
+        run: python scanner.py python desktop/tools/check_model_workers.py --download
       - name: Validate shell entry points
+        if: runner.os == 'Linux'
         run: bash -n setup.sh start-server.sh mobile/build.sh mobile/test.sh training/collector_numbers/train.sh
       - name: Validate public source bundle
         run: python scripts/package_source.py --output dist/pokemon-tcg-scanner-source.zip

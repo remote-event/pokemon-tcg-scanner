@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import tomllib
 from urllib.parse import urlsplit
+from .platforms import venv_python
 
 
 def default_config_path():
@@ -40,11 +41,11 @@ class Config:
     crop: str = "none"
     detector_confidence: float = 0.5
     ocr: str = "none"
-    ocr_python: str = str(Path(__file__).resolve().parents[2] / ".venvs/paddle/bin/python")
+    ocr_python: str = str(venv_python(Path(__file__).resolve().parents[2] / ".venvs/paddle"))
     ocr_device: str = "gpu:0"
     ocr_model: str = "en_PP-OCRv5_mobile_rec"
     ocr_confidence: float = 0.85
-    collector_python: str = str(Path(__file__).resolve().parents[2] / ".venvs/collector/bin/python")
+    collector_python: str = str(venv_python(Path(__file__).resolve().parents[2] / ".venvs/collector"))
     collector_weights: str = "models/collector-number/rfdetr-small.pth"
     collector_confidence: float = 0.5
     collector_padding: float = 0.12

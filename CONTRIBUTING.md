@@ -7,12 +7,15 @@ settings belong in ignored `desktop/config.local.toml`, never shared defaults.
 Before submitting a change:
 
 ```bash
-.venv/bin/python -m pip install -r desktop/requirements/requirements-dev.txt
-(cd desktop && ../.venv/bin/python -B -m unittest discover -s tests)
-.venv/bin/python -m ruff check desktop scripts training
-.venv/bin/python -B -m unittest discover -s training/collector_numbers -p 'test_*.py'
-bash mobile/build.sh testDebugUnitTest assembleDebug  # for Android changes
+python scanner.py pip install -r desktop/requirements/requirements-dev.txt
+python scanner.py python -m unittest discover -s desktop/tests
+python scanner.py python -m ruff check desktop scripts training scanner.py mobile/build.py
+python scanner.py python -m unittest discover -s training/collector_numbers -p 'test_*.py'
+python scanner.py android testDebugUnitTest assembleDebug  # for Android changes
 ```
+
+CI exercises Windows, Linux and macOS with CPU inference, including real model
+workers. The [platform guide](docs/PLATFORMS.md) lists supported architectures.
 
 Backend regression tests use temporary storage, fake model outputs and local
 image fixtures generated in code. They must not download models or depend on a

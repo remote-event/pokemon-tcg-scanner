@@ -33,8 +33,9 @@ model is included in the repository, and setup enables both matching paths.
 
 ## What you need
 
-- **Computer:** Linux or WSL2, Python 3.11/3.12, and an NVIDIA GPU recommended
-  for real-time scanning. CPU mode is also available.
+- **Computer:** Windows x64, Linux x64/ARM64, or macOS 14+ on Apple silicon,
+  with Python 3.11/3.12. NVIDIA GPU acceleration is available on Windows and Linux x64;
+  CPU mode runs the same identification pipeline.
 - **Git LFS:** required to clone the included model and training images.
 - **Phone:** Android 8.0+ on the same private network as your computer.
 - **Android build tools:** JDK 17, Android SDK 36, and ADB. There is no
@@ -47,7 +48,8 @@ locally; card artwork and price lookups may still use the internet.
 
 ### 1. Set up the server
 
-Install [Git LFS](https://git-lfs.com/) first, then run in a Linux or WSL terminal:
+Install [Git LFS](https://git-lfs.com/) first, then run in PowerShell, Command Prompt,
+or your Linux/macOS terminal. Use `python3` if your system has no `python` command:
 
 ```bash
 git lfs install
@@ -55,16 +57,17 @@ git clone https://github.com/remote-event/pokemon-tcg-scanner.git
 cd pokemon-tcg-scanner
 git lfs pull
 
-bash setup.sh --device cuda
-.venv/bin/python scripts/prepare_models.py
-(cd desktop && ../.venv/bin/python -m tcg_scanner sync)
+python scanner.py setup
+python scanner.py models
+python scanner.py sync
 
-bash start-server.sh
+python scanner.py server
 ```
 
-Use `--device cpu` instead if you do not have a supported NVIDIA GPU. GPU setup
-requires a driver compatible with CUDA 13.0. The first catalog sync can take a
-while and includes Scarlet & Violet onward by default.
+Setup selects NVIDIA CUDA when available, otherwise CPU. Pass `--device cpu`
+to force CPU mode or `--device cuda` to require NVIDIA acceleration. CUDA setup
+requires a compatible driver. The first catalog sync can take a while and includes
+Scarlet & Violet onward by default. [Platform details](docs/PLATFORMS.md).
 
 Open the address printed by the server (`http://<computer-ip>:8765`) in your
 browser and create a collection. Keep this terminal running.
@@ -78,9 +81,9 @@ In a second terminal, from the repository folder, with your phone connected by
 USB and USB debugging enabled:
 
 ```bash
-.venv/bin/python -m pip install -r desktop/requirements/requirements-export.txt
-.venv/bin/python scripts/prepare_models.py --android
-bash mobile/build.sh
+python scanner.py pip install -r desktop/requirements/requirements-export.txt
+python scanner.py models --android
+python scanner.py android
 adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
@@ -93,7 +96,7 @@ The app finds the server automatically; you can also enter its IP in settings.
 Hold one card steady in view. Confident matches save automatically; uncertain
 matches can be reviewed in the web interface.
 
-Next time, just run `bash start-server.sh` and open the app.
+Next time, just run `python scanner.py server` and open the app.
 
 ## Training your own detector
 

@@ -1,46 +1,91 @@
-"""Optional printing verification; reference embeddings remain unchanged."""
+"""Collector-number recognition workers and printing verification."""
 import atexit
 import base64
-from io import BytesIO
+from io import BufferedReader, BytesIO
 import json
 import os
 from pathlib import Path
-import select
+from queue import Empty, Full, Queue
 import subprocess
 import threading
-from time import monotonic
 
 
 class PaddleWorker:
-    """One isolated interpreter per scan session; no image files or shell commands."""
+    """Persistent model process with bounded, cross-platform pipe I/O."""
+    MAX_RESPONSE = 2_000_000
+
     def __init__(self, config, command=None):
         self.config = config
         self.process = None
         self.info = {}
         self.lock = threading.RLock()
+        self._threads = []
         self.command = command or [str(Path(config.ocr_python).expanduser()), '-I', '-B', '-u',
                                   str(Path(__file__).with_name('ocr_worker.py')), config.ocr_device, config.ocr_model]
         atexit.register(self.close)
 
+    @staticmethod
+    def _publish(queue, value, stopped):
+        while not stopped.is_set():
+            try:
+                queue.put(value, timeout=.1)
+                return
+            except Full:
+                continue
+
+    @classmethod
+    def _read_loop(cls, process, replies, stopped):
+        try:
+            while not stopped.is_set():
+                line = process.stdout.readline(cls.MAX_RESPONSE + 1)
+                if not line:
+                    raise RuntimeError('Inference worker exited unexpectedly')
+                if len(line) > cls.MAX_RESPONSE:
+                    raise RuntimeError('Inference worker returned an oversized response')
+                if not line.endswith(b'\n'):
+                    raise RuntimeError('Inference worker returned an incomplete response')
+                try:
+                    result = json.loads(line)
+                    if not isinstance(result, dict):
+                        raise ValueError('Expected a JSON object')
+                except (ValueError, UnicodeError) as exc:
+                    raise RuntimeError('Inference worker returned invalid JSON') from exc
+                cls._publish(replies, result, stopped)
+        except (OSError, ValueError, RuntimeError) as exc:
+            cls._publish(replies, exc, stopped)
+
+    @classmethod
+    def _write_loop(cls, process, requests, stopped, writing):
+        while not stopped.is_set():
+            try:
+                payload, complete = requests.get(timeout=.1)
+            except Empty:
+                continue
+            writing.set()
+            try:
+                view = memoryview(payload)
+                while view and not stopped.is_set():
+                    written = process.stdin.write(view[:65536])
+                    if not written:
+                        raise RuntimeError('Inference worker input closed')
+                    view = view[written:]
+                complete.put(None)
+            except (OSError, ValueError, RuntimeError) as exc:
+                complete.put(exc)
+                return
+            finally:
+                writing.clear()
+
     def _receive(self, timeout):
-        deadline = monotonic() + timeout
-        data = bytearray()
-        fd = self.process.stdout.fileno()
-        while True:
-            remaining = deadline - monotonic()
-            if remaining <= 0 or not select.select([fd], [], [], remaining)[0]:
-                raise RuntimeError("PaddleOCR timed out; retaining embedding candidates")
-            chunk = os.read(fd, 65536)
-            if not chunk:
-                raise RuntimeError("PaddleOCR worker exited unexpectedly")
-            data.extend(chunk)
-            if len(data) > 2_000_000:
-                raise RuntimeError("PaddleOCR returned an oversized response")
-            if data.endswith(b"\n"):
-                result = json.loads(data)
-                if "error" in result:
-                    raise RuntimeError(result["error"])
-                return result
+        try:
+            result = self._replies.get(timeout=timeout)
+        except Empty as exc:
+            raise RuntimeError('Inference worker timed out; retaining visual candidates') from exc
+        if isinstance(result, Exception):
+            raise RuntimeError(str(result)) from result
+        if 'error' in result:
+            raise RuntimeError(result['error'])
+        return result
 
     def start(self):
         with self.lock:
@@ -48,7 +93,18 @@ class PaddleWorker:
                 environment = os.environ.copy()
                 if Path('/usr/lib/wsl/lib/libcuda.so').exists():
                     environment['LD_LIBRARY_PATH'] = '/usr/lib/wsl/lib:' + environment.get('LD_LIBRARY_PATH', '')
+                environment.setdefault('PYTHONUTF8', '1')
                 self.process = subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0, env=environment)
+                self.process.stdout = BufferedReader(self.process.stdout)
+                self._replies, self._requests = Queue(maxsize=2), Queue(maxsize=1)
+                self._stopped, self._writing = threading.Event(), threading.Event()
+                self._threads = [
+                    threading.Thread(target=self._read_loop, args=(self.process, self._replies, self._stopped),
+                                     name='model-output', daemon=True),
+                    threading.Thread(target=self._write_loop, args=(self.process, self._requests, self._stopped, self._writing),
+                                     name='model-input', daemon=True)]
+                for thread in self._threads:
+                    thread.start()
                 try:
                     self.info = self._receive(180)
                     if not self.info.get('ready'):
@@ -60,36 +116,34 @@ class PaddleWorker:
 
     def recognize(self, image):
         with self.lock:
-            return self._recognize(image)
-
-    def _recognize(self, image):
-        try:
-            self.start()
-            payload = json.dumps({"image": base64.b64encode(image).decode("ascii")}).encode() + b"\n"
-            # Raw pipe writes may be partial; keep a bounded request, with no queued photos.
-            view = memoryview(payload)
-            fd = self.process.stdin.fileno()
-            os.set_blocking(fd, False)
-            deadline = monotonic() + 2
-            while view:
-                remaining = deadline - monotonic()
-                if remaining <= 0 or not select.select([], [fd], [], remaining)[1]:
-                    raise RuntimeError("PaddleOCR input timed out")
+            try:
+                self.start()
+                payload = json.dumps({'image': base64.b64encode(image).decode('ascii')}).encode() + b'\n'
+                complete = Queue(maxsize=1)
                 try:
-                    written = os.write(fd, view[:65536])
-                    view = view[written:]
-                except BlockingIOError:
-                    continue
-            return {**self.info, **self._receive(3)}
-        except BaseException:
-            self.stop()
-            raise
+                    self._requests.put((payload, complete), timeout=2)
+                    error = complete.get(timeout=2)
+                except (Empty, Full) as exc:
+                    raise RuntimeError('Inference worker input timed out') from exc
+                if error:
+                    raise RuntimeError(f'Inference worker input failed: {error}') from error
+                timeout = 30 if self.config.ocr_device == 'cpu' else 3
+                return {**self.info, **self._receive(timeout)}
+            except BaseException:
+                self.stop()
+                raise
 
     def stop(self):
-        process, self.process = self.process, None
-        if process is not None:
-            # EOF lets Paddle release CUDA normally instead of logging SIGTERM as fatal.
-            process.stdin.close()
+        with self.lock:
+            process, self.process = self.process, None
+            if process is None:
+                return
+            self._stopped.set()
+            # A stalled writer must be unblocked by terminating its reader first.
+            if self._writing.is_set() and process.poll() is None:
+                process.terminate()
+            else:
+                process.stdin.close()  # EOF allows a healthy worker to exit normally.
             try:
                 process.wait(timeout=.5)
             except subprocess.TimeoutExpired:
@@ -99,7 +153,11 @@ class PaddleWorker:
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait()
+            for thread in self._threads:
+                thread.join(timeout=2)
+            process.stdin.close()
             process.stdout.close()
+            self._threads = []
 
     def close(self):
         self.stop()

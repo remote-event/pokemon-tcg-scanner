@@ -3,7 +3,7 @@ import argparse
 import csv
 import json
 import math
-import os
+import psutil
 from pathlib import Path
 import time
 
@@ -84,11 +84,8 @@ def main():
     args = parser.parse_args()
     last_modified = None
     while True:
-        if args.parent_pid:
-            try:
-                os.kill(args.parent_pid, 0)
-            except ProcessLookupError:
-                break
+        if args.parent_pid and not psutil.pid_exists(args.parent_pid):
+            break
         try:
             modified = (args.run / 'metrics.csv').stat().st_mtime_ns
             if modified != last_modified:

@@ -9,9 +9,9 @@ JDK 17 and Android SDK 36 are needed to build.
 From the repository root, after installing the backend dependencies:
 
 ```bash
-.venv/bin/python -m pip install -r desktop/requirements/requirements-export.txt
-.venv/bin/python scripts/prepare_models.py --android
-bash mobile/build.sh
+python scanner.py pip install -r desktop/requirements/requirements-export.txt
+python scanner.py models --android
+python scanner.py android
 adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
@@ -20,7 +20,8 @@ without training. Generated `card_pose_yolov8n.onnx` stays local; source archive
 contain the model specification and notices. `mobile/build.sh` refuses to package
 an app without the detector. CI compiles without it and does not publish that APK.
 
-Set `JAVA_HOME` and `ANDROID_HOME` to your installed Linux JDK/SDK. For WSL using
+Set `JAVA_HOME` and `ANDROID_HOME` to your installed JDK/SDK.
+`python scanner.py android` selects the native Windows or Unix Gradle wrapper. For WSL using
 Windows Android Studio instead, put the Windows SDK in `android/local.properties`
 (ignored by Git), ensure `cmd.exe` is on PATH, and run:
 

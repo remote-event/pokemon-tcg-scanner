@@ -11,7 +11,7 @@ checkpoint with the repository; model preparation caches the upstream models.
 | Collector-number detector | Included `models/collector-number/rfdetr-small.pth`, fine-tuned RF-DETR Small; 512 × 512 grayscale/stretch |
 | Text recognition | PaddleOCR `en_PP-OCRv5_mobile_rec`; recognition only |
 
-Run `.venv/bin/python scripts/prepare_models.py` to cache the configured public
+Run `python scanner.py models` to cache the configured public
 models. Add `--android` after installing `requirements-export.txt` to export the
 phone detector. Hugging Face and Paddle use their normal per-user caches. The
 Android model goes in `mobile/android/app/src/main/assets/`; its generated JSON
@@ -27,8 +27,8 @@ Its metadata records the SHA-256; setup verifies it before installing dependenci
 ```bash
 git lfs install
 git lfs pull
-bash setup.sh --device cuda
-.venv/bin/python scripts/prepare_models.py
+python scanner.py setup
+python scanner.py models
 ```
 
 Setup uses the included checkpoint and creates persistent RF-DETR and PaddleOCR

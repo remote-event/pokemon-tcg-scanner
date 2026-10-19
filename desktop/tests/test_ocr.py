@@ -76,6 +76,36 @@ for line in sys.stdin:
             with self.assertRaises(ValueError):
                 Config(**values)
 
+    def test_invalid_or_oversized_response_cleans_up_and_can_restart(self):
+        for reply in ["b'not-json\\n'", "b'x' * 2000001 + b'\\n'"]:
+            with self.subTest(reply=reply):
+                code = f"import sys,json; print(json.dumps({{'ready':True}}),flush=True); sys.stdin.readline(); sys.stdout.buffer.write({reply}); sys.stdout.buffer.flush()"
+                worker = PaddleWorker(Config(), [sys.executable, '-u', '-c', code])
+                try:
+                    worker.start()
+                    process, threads = worker.process, worker._threads[:]
+                    with self.assertRaises(RuntimeError):
+                        worker.recognize(b'image')
+                    self.assertIsNotNone(process.poll())
+                    self.assertTrue(all(not t.is_alive() for t in threads))
+                    worker.command = [sys.executable, '-u', '-c', "import sys,json; print(json.dumps({'ready':True}),flush=True); sys.stdin.readline(); print(json.dumps({'lines':[]}),flush=True)"]
+                    self.assertEqual(worker.recognize(b'new image')['lines'], [])
+                finally:
+                    worker.close()
+
+    def test_worker_that_never_reads_cannot_block_the_server(self):
+        code = "import json,time; print(json.dumps({'ready':True}),flush=True); time.sleep(60)"
+        worker = PaddleWorker(Config(), [sys.executable, '-u', '-c', code])
+        try:
+            worker.start()
+            process, threads = worker.process, worker._threads[:]
+            with self.assertRaisesRegex(RuntimeError, 'input timed out'):
+                worker.recognize(b'x' * 500000)
+            self.assertIsNotNone(process.poll())
+            self.assertTrue(all(not t.is_alive() for t in threads))
+        finally:
+            worker.close()
+
 
 if __name__ == '__main__':
     unittest.main()

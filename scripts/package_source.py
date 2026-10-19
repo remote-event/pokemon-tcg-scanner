@@ -6,7 +6,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TOP = {'README.md', 'LICENSE', 'CONTRIBUTING.md', 'SECURITY.md', 'THIRD_PARTY_NOTICES.md',
-       '.gitignore', '.gitattributes', 'pyproject.toml', 'setup.sh', 'start-server.sh'}
+       '.gitignore', '.gitattributes', 'pyproject.toml', 'scanner.py', 'setup.sh', 'start-server.sh'}
 DIRECTORIES = {'desktop', 'web', 'mobile', 'training', 'scripts', '.github', 'docs', 'models'}
 EXCLUDE = {'build', '.gradle', '.kotlin', '__pycache__', 'node_modules', '.venv', '.venvs', '.idea', '.cxx'}
 SUFFIXES = {'.py', '.md', '.txt', '.toml', '.html', '.css', '.js', '.mjs', '.json', '.xml', '.kt',

@@ -1,6 +1,6 @@
 """Train the collector-number detector in an isolated RF-DETR environment."""
 import argparse
-import fcntl
+from filelock import FileLock, Timeout
 import json
 import os
 from pathlib import Path
@@ -24,11 +24,18 @@ def main():
         parser.error('Use a fresh output directory, or --resume with a training checkpoint')
     output.mkdir(parents=True, exist_ok=True)
     # Hold the lock for the whole run, including checkpoint writes.
-    run_lock = (output / '.training.lock').open('a')
+    run_lock = FileLock(output / '.training.lock')
     try:
-        fcntl.flock(run_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
+        run_lock.acquire(timeout=0)
+    except Timeout:
         parser.error('This output directory already has a running trainer')
+    try:
+        train(args, dataset, output, resume, manifest)
+    finally:
+        run_lock.release()
+
+
+def train(args, dataset, output, resume, manifest):
     report_script = Path(__file__).resolve().with_name('report.py')
     # Pretrained downloads belong to the training cache, not the repository root.
     cache = Path.home() / '.cache/tcg-scanner/rfdetr-weights'

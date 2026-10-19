@@ -5,6 +5,9 @@ pricing. Android sends cropped cards over a bounded WebSocket stream; the browse
 uses the same collection store through the HTTP API. See the root
 [quick start](../README.md) for a new installation.
 
+See [platform support](../docs/PLATFORMS.md) for native Windows, Linux and macOS.
+`python scanner.py setup` selects platform-compatible dependencies and interpreter paths.
+
 ## Setup prerequisites
 
 On minimal Ubuntu installations, install `python3-venv`, `libgl1` and
@@ -39,7 +42,7 @@ collector weights resolve relative to `data_dir`.
 Back up the entire scan-history directory while the server is stopped. The
 web interface's ZIP export is a portable collection export, not a full backup.
 
-## Manual installation or recovery
+## Manual Linux installation or recovery
 
 Use Python 3.11/3.12 on Linux x86_64 or WSL2. These commands are also the recovery
 path if the setup script stopped during dependency downloads. They do not overwrite
@@ -55,9 +58,13 @@ python3 -m venv .venv
 cp -n desktop/config.toml desktop/config.local.toml
 ```
 
+On Windows, use the portable installer; its CUDA mode uses CPU FAISS. On macOS,
+use the CPU installer with PyPI wheels. Do not apply the Linux GPU dependency file
+to those platforms.
+
 Set `device = "cuda"` and `faiss_device = "cuda"` for GPU use, or `"cpu"` for both.
 Shared defaults enable collector recognition; complete the worker setup below
-for a manual installation. `bash setup.sh --device cuda` performs both steps
+for a manual installation. `python scanner.py setup --device cuda` performs both steps
 automatically on a new checkout.
 Model-preparation and catalog commands are in the root README. Dependency upgrades
 that alter DINOv2 preprocessing can require rebuilding reference embeddings;
@@ -97,12 +104,14 @@ visual matching and collector-number recognition.
 ## Run and inspect
 
 ```bash
-bash start-server.sh --host <private-ip> --port 8765
+python scanner.py server --host <private-ip> --port 8765
 # Detailed troubleshooting only:
-bash start-server.sh --log-level debug --access-log
+python scanner.py server --log-level debug --access-log
 # Installation diagnostics, without modifying databases or downloading models:
-(cd desktop && ../.venv/bin/python -m tcg_scanner.doctor)
+python scanner.py doctor
 ```
+
+The normal entry point on every platform is `python scanner.py server`.
 
 Normal logs include startup, connections, accepted scans and errors. HTTP access
 logging is off by default. `/health` reports the selected compute devices, model

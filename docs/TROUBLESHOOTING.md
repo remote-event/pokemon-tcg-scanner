@@ -3,7 +3,7 @@
 Start with:
 
 ```bash
-(cd desktop && ../.venv/bin/python -m tcg_scanner.doctor)
+python scanner.py doctor
 ```
 
 The checker is read-only: it reports dependency, model-cache, catalog and CUDA
@@ -12,8 +12,8 @@ the final model and kernel validation. `/health` reflects the running server.
 
 | Symptom | Check |
 | --- | --- |
-| No server Python environment | Run `bash setup.sh --device cuda` or follow manual setup if `.venv` already exists |
-| Offline model cache miss | Run `.venv/bin/python scripts/prepare_models.py` with internet access |
+| No server Python environment | Run `python scanner.py setup --device cuda` or follow manual setup if `.venv` already exists |
+| Offline model cache miss | Run `python scanner.py models` with internet access |
 | No reference embeddings | Run `tcg_scanner sync`; choose `--set` for a small initial catalog |
 | Model/preprocessing mismatch | Use the pinned dependency versions or regenerate references with `embed --existing --regenerate` |
 | CUDA unavailable | Check `nvidia-smi` inside the same Linux/WSL environment; the selected wheels require a compatible NVIDIA driver |
@@ -23,6 +23,13 @@ the final model and kernel validation. `/health` reflects the running server.
 | Android build lacks detector | Run `scripts/prepare_models.py --android` before packaging |
 | Phone cannot discover server | Enter the server's private IPv4 in settings and check firewall/network isolation |
 | Chime/vibration absent | App toggles, system volume and phone Silent mode all affect scan feedback |
+
+## Native Windows and macOS
+
+WSL is not required for native Windows setup. Use `python scanner.py setup` and
+the commands in [platform support](PLATFORMS.md). Windows CUDA installations use
+CPU FAISS alongside GPU model inference. On macOS, use native ARM64 Python on
+macOS 14+; the current dependency set does not support Intel Macs.
 
 ## WSL networking
 
@@ -40,7 +47,7 @@ Training, builds and inference otherwise use Bash/Python entry points.
 
 ## Diagnostics
 
-Use `bash start-server.sh --log-level debug --access-log` only while investigating
+Use `python scanner.py server --log-level debug --access-log` only while investigating
 an issue. Redact private paths, network details and scan content from public logs.
 `desktop/tools/test_discovery.py <private-ip>` checks mDNS and health. Keep optional
 reports under `artifacts/`, which is ignored by Git and excluded from source bundles.
