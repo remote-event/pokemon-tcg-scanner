@@ -27,26 +27,16 @@ The web interface with a demo collection using photos from the included dataset.
 
 ## How a scan works
 
-1. **Find the card.** YOLOv8n detects the card's corners on your Android phone.
-   The app straightens and crops the card, then sends it to your local server.
-2. **Compare the artwork.** DINOv2 Small creates an image embedding—a numerical
-   representation of the card. FAISS compares it with the reference catalog
-   to find visually similar cards.
-3. **Read the collector number.** In parallel, a trained RF-DETR Small
-   model finds the number region. PaddleOCR (`en_PP-OCRv5_mobile_rec`) reads only
-   that small crop, without running another text detector.
-4. **Combine the evidence.** The number is checked against the entire card
-   catalog, including cards outside the top visual matches. Candidates supported
-   by both paths are preferred, helping distinguish similar artwork and numbers
-   shared across sets. If OCR is unavailable or unreliable, visual matching is
-   used on its own.
-5. **Save a confident result.** The card is added to your selected collection.
-   Ambiguous results stay unsaved while the app tries another view; you can also
-   review candidates in the browser. An unchanged accepted card is not repeatedly
-   processed or saved.
+1. **Find the card.** YOLOv8n crops the card on your phone and sends it to your computer.
+2. **Match the artwork.** DINOv2 Small and FAISS find visually similar cards.
+3. **Read the collector number.** RF-DETR Small locates the number, and PaddleOCR reads it.
+4. **Identify the card.** The server combines artwork and collector-number matches
+   to distinguish cards across sets.
+5. **Save the result.** Confident matches save to your collection. Uncertain matches
+   retry or can be reviewed in the browser.
 
-All AI after the initial card crop runs on your computer. The trained collector-number
-model is included in the repository, and setup enables both matching paths.
+Artwork matching and number recognition run in parallel on your computer.
+The trained collector-number model is included.
 [Model setup](docs/MODELS.md) · [Detailed matching process](desktop/HYBRID_SCANNING.md)
 
 ## What you need
@@ -118,34 +108,25 @@ Next time, just run `python scanner.py server` and open the app.
 
 ## Using the scanner
 
-The Android app uses native Kotlin, Jetpack Compose, CameraX, and ONNX Runtime.
-The browser interface uses plain HTML, CSS, and JavaScript served by FastAPI;
-it needs no separate frontend build or server.
+Select a collection at the bottom of the app and hold one card steady. The result
+shows the identified card, destination collection, and timing. Use the browser to
+review uncertain matches, edit or move scans, search, and export collections.
 
-In the app, select a collection at the bottom and hold one card steady. The result
-shows the card and collection; “Saved in…” appears if you switch collections after
-saving. Uncertain cards retry and may show a tilt hint. In the browser, review
-uncertain candidates, edit or move scans, search, delete, and export collections.
-
-- **Scan time:** from the first usable camera frame until the saved result is ready
-  on the phone, including stabilization, retries, network transfer, and history fetch.
-- **Processing time:** server processing of the deciding frame, excluding storage
-  and transfer; it may include cached inference. Timing is shown for the latest
-  local result and is not stored with historical scans.
+- **Scan time:** total time from the first usable frame to the saved result on your phone.
+- **Processing time:** server recognition time, excluding storage and network transfer.
 - **Sound and vibration:** enabled through app preferences and Android settings.
-  They fire for newly saved scans. Silent mode or system volume can suppress them.
+  They fire for newly saved scans and follow your phone's sound settings.
 
 ### Collection exports
 
 **Export ZIP** downloads `collection.json` and an `images/` folder. Each entry in
 `cards` includes `name`, `set`, `number`, and `image_path` relative to the ZIP.
-Numbers remain strings to preserve formatting. The manifest also includes collection
-metadata, export time, card/scan IDs, set code and size, timestamps, and verification status.
+Numbers remain strings to preserve formatting. The JSON also includes collection
+details, timestamps, and verification status.
 
 Exports include the entire collection regardless of search or pagination. Shared
 images appear once; missing images have `image_path: null` and contribute to
-`missing_image_count`. These are saved scan crops, not catalog images. ZIP import
-is not currently supported.
+`missing_image_count`. ZIP import is not currently supported.
 
 ### Android updates
 
@@ -226,35 +207,28 @@ never runs during setup or startup.
 
 ## Models and dataset
 
-Models initialize once and are reused. Setup creates separate server, RF-DETR,
-and PaddleOCR environments. Collector-number recognition is part of the normal
-pipeline; training is not required. [Model preparation details](docs/MODELS.md).
+Setup prepares the models for artwork matching and collector-number recognition.
+[Model preparation details](docs/MODELS.md).
 
 | Model | Purpose | Input |
 | --- | --- | --- |
 | YOLOv8n card-corner detector | Crop and straighten the card on Android | 480 × 480 ONNX export |
 | DINOv2 Small | Create artwork embeddings for FAISS search | Cropped card |
 | RF-DETR Small | Locate the collector-number region on the server | 512 × 512 grayscale/stretch |
-| `en_PP-OCRv5_mobile_rec` | Recognize the collector number with PaddleOCR | Small padded number crop; no OCR detector |
+| `en_PP-OCRv5_mobile_rec` | Recognize the collector number with PaddleOCR | Collector-number crop |
 
 ### Included collector-number checkpoint
 
 [`models/collector-number/rfdetr-small.pth`](models/collector-number/rfdetr-small.pth)
-is the project's fine-tuned RF-DETR Small checkpoint, stored through Git LFS
-(127,363,541 bytes). It has one detection class, `collection_number`, and uses
-RF-DETR 1.11.2. Preprocessing applies EXIF orientation, grayscale copied into RGB
-channels, and 512 × 512 stretch.
+is the project's trained number detector, included through Git LFS and ready to use.
+Setup verifies it automatically. If the file contains only a Git LFS pointer,
+run `git lfs pull`.
 
-SHA-256: `c5e4a19c65c6b5daa15007f504691553092f076ef1110a6b75263ef8948df79e`.
-[Metadata](models/collector-number/rfdetr-small.json),
-[checksums](models/collector-number/SHA256SUMS), and
-[training parameters](models/collector-number/training.json) describe the export.
-The source was `checkpoint_best_total.pth`; inference tensors match the deployed
-checkpoint, with training state and workstation paths removed. It cannot resume training.
-
-The model is based on RF-DETR Small under [Apache-2.0](models/collector-number/LICENSE-APACHE.txt).
-The export does not quantize or retrain it. Setup verifies the checksum; if the
-file contains only a Git LFS pointer, run `git lfs pull`.
+See its [metadata](models/collector-number/rfdetr-small.json),
+[checksums](models/collector-number/SHA256SUMS),
+[training parameters](models/collector-number/training.json), and
+[Apache-2.0 license](models/collector-number/LICENSE-APACHE.txt).
+The included file is for inference; resuming training requires a full training checkpoint.
 
 ### Included training dataset
 
@@ -415,6 +389,9 @@ See [RF-DETR](https://github.com/roboflow/rf-detr) for upstream model documentat
 </details>
 
 ## Development and testing
+
+Android uses Kotlin, Jetpack Compose, CameraX, and ONNX Runtime. The web interface
+uses HTML, CSS, and JavaScript served by the FastAPI backend.
 
 All commands below run from the repository root. [Contributing](CONTRIBUTING.md)
 describes the required checks. CI validates the full CPU pipeline on Windows,
