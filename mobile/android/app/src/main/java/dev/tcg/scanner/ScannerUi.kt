@@ -13,15 +13,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -77,67 +73,28 @@ internal fun date(time:Long)=DateFormat.getDateTimeInstance(DateFormat.SHORT,Dat
     var settings by rememberSaveable { mutableStateOf(false) }
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var torch by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(foreground) { if(!foreground)torch=false }
+    var paused by rememberSaveable { mutableStateOf(false) }
+    var choosing by rememberSaveable { mutableStateOf(false) }
+    var preview by remember { mutableStateOf<ScanEntry?>(null) }
+    val scanning=foreground && cameraAllowed && !library && !settings && !choosing && preview==null && !paused && state.catalog?.active!=null
+    LaunchedEffect(scanning) { if(!scanning)torch=false }
     BackHandler(library && selected==null && !settings) { library=false }
     ScannerTheme {
         Surface(Modifier.fillMaxSize(),color=Background) {
             if(library) {
                 CollectionScreen(backend,state,foreground,selected,{selected=it},{selected=null;library=false})
-            } else Box(Modifier.fillMaxSize()) {
-                if(cameraAllowed)camera(Modifier.fillMaxSize(),foreground && !settings && state.catalog?.active!=null,torch)
-                Row(Modifier.fillMaxWidth().safeDrawingPadding().padding(12.dp),horizontalArrangement=Arrangement.End) {
-                    Surface(onClick={settings=true},color=SurfaceColor.copy(alpha=.85f),shape=RoundedCornerShape(24.dp),
-                        modifier=Modifier.size(48.dp).semantics { contentDescription="Scanner settings" }) {
-                        Box(contentAlignment=Alignment.Center) { Text("⚙",fontSize=22.sp) }
-                    }
-                }
-                Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().safeDrawingPadding().padding(16.dp),
-                    verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                    val message=if(!cameraAllowed)"Allow camera access to scan cards."
-                        else state.cameraNotice.ifBlank { state.notice.ifBlank { state.hint } }
-                    if(message.isNotBlank())Text(message,Modifier.fillMaxWidth().padding(horizontal=8.dp,vertical=4.dp),
-                        color=Color.White,fontSize=13.sp,textAlign=TextAlign.Center,
-                        style=MaterialTheme.typography.bodySmall.copy(shadow=Shadow(Color.Black,Offset(0f,2f),6f)))
-                    if(!cameraAllowed)Action("Allow camera access",primary=true,modifier=Modifier.align(Alignment.CenterHorizontally),onClick=allowCamera)
-                    Surface(color=SurfaceColor.copy(alpha=.94f),shape=RoundedCornerShape(18.dp)) {
-                        Column {
-                            state.entry?.takeIf { state.preferences.information }?.let { entry->
-                                Row(Modifier.fillMaxWidth().clickable { selected=entry.id;library=true }.padding(12.dp),
-                                    verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                                    Comparison(backend,entry,state.revision,compact=true,modifier=Modifier.width(52.dp))
-                                    Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(3.dp)) {
-                                        Text(entry.card.name,maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.titleMedium)
-                                        Text(subtitle(entry.card),color=Muted,fontSize=12.sp,maxLines=2,overflow=TextOverflow.Ellipsis)
-                                        MarketPrice(backend,entry.card.id,compact=true)
-                                        val timing=scanTimingLabel(entry.scanMs,entry.processingMs)
-                                        if(timing.isNotBlank())Text(timing,color=Muted,fontSize=12.sp)
-                                        if(entry.collectionId!=state.catalog?.active) {
-                                            val saved=state.catalog?.collections?.find { it.id==entry.collectionId }?.name
-                                            Text(saved?.let { "Saved in $it" } ?: "Saved in another collection",color=Muted,fontSize=12.sp,
-                                                maxLines=1,overflow=TextOverflow.Ellipsis)
-                                        }
-                                    }
-                                    Text("›",color=Muted,fontSize=22.sp)
-                                }
-                                HorizontalDivider(color=Muted.copy(alpha=.15f),modifier=Modifier.padding(horizontal=12.dp))
-                            }
-                            val active=state.catalog?.collections?.find { it.id==state.catalog?.active }?.name
-                            Row(Modifier.fillMaxWidth().heightIn(min=48.dp).clickable { library=true }
-                                .semantics { contentDescription="Choose scanning collection" }.padding(horizontal=14.dp,vertical=10.dp),
-                                verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                                Text(active?.let { "Scanning into $it" } ?: "Choose a collection to scan",color=Muted,fontSize=13.sp,
-                                    modifier=Modifier.weight(1f),maxLines=1,overflow=TextOverflow.Ellipsis)
-                                Text("⌄",color=Accent,fontSize=18.sp)
-                            }
-                        }
-                    }
-                }
+            } else ScannerCaptureScreen(backend,state,cameraAllowed,scanning,paused,torch,
+                pause={paused=!paused},light={torch=!torch},settings={settings=true},collections={choosing=true},
+                details={preview=it},allowCamera=allowCamera,camera=camera)
+            preview?.let { entry->
+                ScanResultSheet(backend,entry,state,close={preview=null},manage={preview=null;selected=entry.id;library=true})
             }
-            if(settings)SettingsSheet(backend,state,torch,{torch=it},{settings=false},{settings=false;library=true})
+            if(choosing)CollectionPicker(backend,state,close={choosing=false},manage={choosing=false;library=true})
+            if(settings)SettingsSheet(backend,state,{settings=false},{settings=false;library=true})
         }
     }
 }
-@Composable private fun SettingsSheet(backend:ScannerBackend,state:ScannerState,torch:Boolean,setTorch:(Boolean)->Unit,
+@Composable private fun SettingsSheet(backend:ScannerBackend,state:ScannerState,
                                       close:()->Unit,library:()->Unit) {
     val scope=rememberCoroutineScope()
     var error by remember { mutableStateOf<String?>(null) }
@@ -157,9 +114,6 @@ internal fun date(time:Long)=DateFormat.getDateTimeInstance(DateFormat.SHORT,Dat
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                 Text(label,Modifier.weight(1f));Switch(value,{preference(key,it)},modifier=Modifier.semantics { contentDescription=label })
             }
-        }
-        if(state.hasLight)Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-            Text("Camera light",Modifier.weight(1f));Switch(torch,setTorch,modifier=Modifier.semantics { contentDescription="Camera light" })
         }
         Text("Detection threshold · %.2f".format(threshold))
         Slider(value=threshold,onValueChange={threshold=(it*100).roundToInt()/100f},valueRange=.5f.. .95f,
@@ -337,8 +291,7 @@ private data class Deletion(val title:String,val message:String,val payload:JSON
                 }
             } else {
                 Info(subtitle(entry.card)+" · "+date(entry.time))
-                Comparison(backend,entry,state.revision,full=true)
-                MarketPrice(backend,entry.card.id,full=true)
+                CardPresentation(backend,entry,state.revision)
                 Action("Edit details",primary=true,onClick={editVersion=entry.revision;editing=true})
                 Action("Move to collection",enabled=!busy,onClick={moveIds=listOf(entry.id)})
                 Action("Delete scan",enabled=!busy,onClick={remove(listOf(entry.id))})

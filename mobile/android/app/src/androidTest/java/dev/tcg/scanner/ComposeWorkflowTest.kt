@@ -30,7 +30,10 @@ class ComposeWorkflowTest {
     private fun waitText(text:String) {
         compose.waitUntil(10000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
     }
-    private fun openCollections() { compose.onNodeWithContentDescription("Choose scanning collection").performClick() }
+    private fun openCollections() {
+        compose.onNodeWithContentDescription("Choose scanning collection").performClick()
+        click("Manage collections")
+    }
     private fun openBinder() { openCollections();waitText("Binder");click("Binder");waitText("Pikachu") }
     @Test fun settingsAndNavigationUseNativeState() {
         launch()
@@ -139,6 +142,55 @@ class ComposeWorkflowTest {
         compose.onNodeWithText("Scanning into Binder").assertIsDisplayed()
         compose.onNodeWithContentDescription("Choose scanning collection").performClick()
         waitText("Binder")
+    }
+
+    @Test fun pauseTorchAndDetailSheetRespectCaptureState() {
+        backend.state.value=backend.state.value.copy(entry=ScanEntry.parse(backend.scan!!),hasLight=true,
+            catalog=backend.state.value.catalog!!.copy(active="binder"))
+        var scanning=false
+        var light=false
+        val foreground=androidx.compose.runtime.mutableStateOf(true)
+        compose.setContent { ScannerApp(backend,true,foreground.value,{}) { modifier,enabled,torch->
+            SideEffect { scanning=enabled;light=torch };Box(modifier)
+        } }
+        compose.runOnIdle { assertTrue(scanning);assertFalse(light) }
+        compose.onNodeWithContentDescription("Camera light").performClick()
+        compose.runOnIdle { assertTrue(light) }
+        compose.onNodeWithContentDescription("Pause scanning").performClick()
+        compose.runOnIdle { assertFalse(scanning);assertFalse(light) }
+        compose.onNodeWithText("Scanning paused").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Resume scanning").performClick()
+        compose.runOnIdle { assertTrue(scanning);assertFalse(light) }
+        compose.onNodeWithContentDescription("View details for Pikachu").performClick()
+        waitText("Manage saved card")
+        compose.runOnIdle { assertFalse(scanning);assertNull(backend.confirmed) }
+        click("Back to scanning")
+        compose.runOnIdle { assertTrue(scanning) }
+        compose.onNodeWithContentDescription("Camera light").performClick()
+        compose.runOnIdle { foreground.value=false }
+        compose.runOnIdle { assertFalse(scanning);assertFalse(light);foreground.value=true }
+        compose.runOnIdle { assertTrue(scanning);assertFalse(light) }
+    }
+
+    @Test fun quickCollectionSelectionResumesWithoutOpeningManagement() {
+        backend.state.value=backend.state.value.copy(catalog=backend.state.value.catalog!!.copy(active="binder"))
+        var scanning=false
+        compose.setContent { ScannerApp(backend,true,true,{}) { modifier,enabled,_->
+            SideEffect { scanning=enabled };Box(modifier)
+        } }
+        compose.onNodeWithContentDescription("Choose scanning collection").performClick()
+        waitText("Scan into")
+        compose.runOnIdle { assertFalse(scanning) }
+        click("Trades")
+        waitText("Scanning into Trades")
+        compose.onNodeWithText("Back to scanner").assertDoesNotExist()
+        compose.runOnIdle { assertEquals("trades",backend.active);assertTrue(scanning) }
+        compose.onNodeWithContentDescription("Pause scanning").performClick()
+        compose.onNodeWithContentDescription("Choose scanning collection").performClick()
+        click("Binder")
+        waitText("Scanning into Binder")
+        compose.runOnIdle { assertFalse(scanning) }
+        compose.onNodeWithContentDescription("Resume scanning").assertIsDisplayed()
     }
 
     private class FixtureBackend:ScannerBackend {

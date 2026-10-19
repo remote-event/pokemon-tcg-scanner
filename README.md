@@ -108,9 +108,12 @@ Next time, just run `python scanner.py server` and open the app.
 
 ## Using the scanner
 
-Select a collection at the bottom of the app and hold one card steady. The result
-shows the identified card, destination collection, and timing. Use the browser to
-review uncertain matches, edit or move scans, search, and export collections.
+Choose a collection from the bottom selector and hold one card steady. Confident
+matches save automatically. Tap the result for larger artwork, pricing, and image
+comparison. Pause scanning or toggle the flashlight using the camera controls.
+
+Use **Manage collections** to create or organize collections. The browser also
+supports reviewing uncertain matches, searching, editing, moving, and exporting scans.
 
 - **Scan time:** total time from the first usable frame to the saved result on your phone.
 - **Processing time:** server recognition time, excluding storage and network transfer.

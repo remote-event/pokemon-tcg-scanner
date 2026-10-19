@@ -6,7 +6,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,24 +28,26 @@ import org.json.JSONObject
 import java.util.Locale
 
 @Composable internal fun Comparison(backend:ScannerBackend,entry:ScanEntry,revision:Long,compact:Boolean=false,
-                                    full:Boolean=false,modifier:Modifier=Modifier) {
-    var media by remember(entry.id,entry.card.id,full) { mutableStateOf<JSONObject?>(null) }
-    var loaded by remember(entry.id,full) { mutableStateOf(false) }
+                                    full:Boolean=false,artwork:Boolean=false,modifier:Modifier=Modifier) {
+    val requestFull=full || artwork
+    var media by remember(entry.id,entry.card.id,requestFull) { mutableStateOf<JSONObject?>(null) }
+    var loaded by remember(entry.id,requestFull) { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
-    LaunchedEffect(entry.id,entry.card.id,revision,full,retry) {
-        try { media=backend.request("scanMedia",JSONObject().put("id",entry.id).put("full",full)) }
+    LaunchedEffect(entry.id,entry.card.id,revision,requestFull,retry) {
+        try { media=backend.request("scanMedia",JSONObject().put("id",entry.id).put("full",requestFull)) }
         catch(e:CancellationException){throw e}
         catch(_:Exception){media=null}
         loaded=true
     }
-    val height=if(compact)73.dp else if(full)300.dp else 205.dp
+    val height=if(compact)84.dp else if(artwork)335.dp else if(full)300.dp else 205.dp
     Column(modifier) {
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            val labels=if(full)listOf("Scanned Image","Reference Image") else listOf("Scanned Image")
+            val labels=if(full)listOf("Scanned Image","Reference Image") else if(artwork)listOf("Card artwork") else listOf("Scanned Image")
             labels.forEachIndexed { index,label->
                 Column(Modifier.weight(1f)) {
-                    if(!compact)Info(label)
-                    val uri=media?.stringOrNull(if(index==0)"scanned_uri" else "reference_uri")
+                    if(!compact && !artwork)Info(label)
+                    val uri=if(artwork)media?.stringOrNull("reference_uri") ?: media?.stringOrNull("scanned_uri")
+                        else media?.stringOrNull(if(index==0)"scanned_uri" else "reference_uri")
                     var bitmap by remember(uri) { mutableStateOf<ImageBitmap?>(null) }
                     var decoded by remember(uri) { mutableStateOf(false) }
                     LaunchedEffect(uri) {
@@ -55,16 +59,25 @@ import java.util.Locale
                     Box(Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(8.dp)).background(Background),contentAlignment=Alignment.Center) {
                         if(bitmap!=null)Image(bitmap!!,label,Modifier.fillMaxSize(),contentScale=ContentScale.Fit)
                         else Info(if(compact)"—" else if(!loaded || !decoded)"Loading…"
-                            else if(index==0 && media?.optBoolean("synced")==true && media?.optBoolean("has_photo")==false)"No saved photo"
+                            else if(!artwork && index==0 && media?.optBoolean("synced")==true && media?.optBoolean("has_photo")==false)"No saved photo"
                             else "Image unavailable",Modifier.padding(8.dp))
                     }
                 }
             }
         }
-        if(!compact && loaded && (media?.stringOrNull("scanned_uri")==null || full && media?.stringOrNull("reference_uri")==null))
+        if(!compact && loaded && (if(artwork)media?.stringOrNull("reference_uri")==null && media?.stringOrNull("scanned_uri")==null
+            else media?.stringOrNull("scanned_uri")==null || full && media?.stringOrNull("reference_uri")==null))
             Action("Retry images",onClick={retry++})
     }
 }
+@Composable internal fun ColumnScope.CardPresentation(backend:ScannerBackend,entry:ScanEntry,revision:Long) {
+    var compare by remember(entry.id) { mutableStateOf(false) }
+    Comparison(backend,entry,revision,artwork=true,modifier=Modifier.align(Alignment.CenterHorizontally).width(240.dp))
+    MarketPrice(backend,entry.card.id,full=true)
+    TextButton(onClick={compare=!compare}) { Text(if(compare)"Hide image comparison" else "Compare scanned and reference images") }
+    if(compare)Comparison(backend,entry,revision,full=true)
+}
+
 private fun money(cents:Long)="$"+String.format(Locale.US,"%.2f",cents/100.0)
 @Composable internal fun MarketPrice(backend:ScannerBackend,cardId:String,compact:Boolean=false,full:Boolean=false) {
     val lifecycle=LocalLifecycleOwner.current.lifecycle
@@ -90,7 +103,8 @@ private fun money(cents:Long)="$"+String.format(Locale.US,"%.2f",cents/100.0)
         (if(!compact && price?.optBoolean("stale")==true)" · Older data" else "")
         else if(!loaded || price?.optString("status")=="loading")"Pricing…" else if(compact)"—" else "Price unavailable"
     Column(verticalArrangement=Arrangement.spacedBy(4.dp)) {
-        Text(text,color=Accent)
+        Text(text,color=if(available)Accent else Muted,
+            style=if(full)MaterialTheme.typography.headlineSmall else if(compact)MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge)
         if(full) {
             price?.optJSONArray("quotes")?.objects()?.forEach { Info("${it.optString("label")} · ${money(it.optLong("cents"))} USD") }
             Info("TCGplayer market · via TCGdex")

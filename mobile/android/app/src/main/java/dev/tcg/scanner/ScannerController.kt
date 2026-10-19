@@ -124,7 +124,11 @@ internal class ScannerController(application:Application):AndroidViewModel(appli
                 }
                 "library"->api("/api/library?"+listOf("collection_id","before","query","limit").joinToString("&") {
                     it+"="+Uri.encode(value.optString(it,if(it=="limit")"40" else "")) })
-                "collectionAction"->api("/api/library/action",value).also { changed() }
+                "collectionAction"->api("/api/library/action",value).also {
+                    // Reflect the confirmed destination before the scanner resumes; polling follows later.
+                    mutable.update { state->state.copy(revision=state.revision+1,
+                        catalog=if(value.optString("action")=="select")state.catalog?.copy(active=value.getString("id")) else state.catalog) }
+                }
                 "confirm"->{
                     try {
                         api("/api/library/confirm",value).also { if(it.optString("event")=="recognized")accept(it);mutable.update { s->s.copy(pending=null,hint="") } }
