@@ -38,8 +38,8 @@ model is included in the repository, and setup enables both matching paths.
   CPU mode runs the same identification pipeline.
 - **Git LFS:** required to clone the included model and training images.
 - **Phone:** Android 8.0+ on the same private network as your computer.
-- **Android build tools:** JDK 17, Android SDK 36, and ADB. There is no
-  downloadable APK yet; you build the app yourself.
+- **Android app:** download the signed APK from [Android APK builds](https://github.com/remote-event/pokemon-tcg-scanner/actions/workflows/android-apk.yml).
+  JDK/Android SDK are only needed if you choose to build it yourself.
 
 Internet is needed for setup and card catalog downloads. Identification runs
 locally; card artwork and price lookups may still use the internet.
@@ -77,17 +77,18 @@ browser and create a collection. Keep this terminal running.
 
 ### 2. Install the Android app
 
-In a second terminal, from the repository folder, with your phone connected by
-USB and USB debugging enabled:
+Open [Android APK builds](https://github.com/remote-event/pokemon-tcg-scanner/actions/workflows/android-apk.yml),
+select the latest successful run, and download its **pokemon-tcg-scanner-android**
+artifact. Extract the ZIP and open `pokemon-tcg-scanner.apk` on your phone.
+Allow installation from your browser or file manager when Android asks.
+GitHub requires you to sign in to download Actions artifacts.
 
-```bash
-python scanner.py pip install -r desktop/requirements/requirements-export.txt
-python scanner.py models --android
-python scanner.py android
-adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
-```
+The APK includes the phone detector. GitHub builds it automatically when Android
+code changes; maintainers can also select **Run workflow**. The same release key
+is used for updates. Existing local debug installs use a different signing key;
+see [installation and build details](mobile/README.md#install-the-github-build).
 
-[Android SDK setup and Windows tools from WSL](mobile/README.md#prepare-and-build)
+[Build the app yourself](mobile/README.md#prepare-and-build)
 
 ### 3. Scan a card
 

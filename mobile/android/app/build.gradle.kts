@@ -10,14 +10,22 @@ android {
         applicationId = "dev.tcg.scanner"
         minSdk = 26
         targetSdk = 36
-        versionCode = 23
-        versionName = "1.1.5"
+        val ciBuild = providers.environmentVariable("APK_BUILD_NUMBER").orNull?.toInt()
+        versionCode = ciBuild?.let { 1000 + it } ?: 23
+        versionName = ciBuild?.let { "1.1.5-build.$it" } ?: "1.1.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
     testOptions { unitTests.isReturnDefaultValues = true }
+}
+tasks.matching { it.name == "mergeReleaseAssets" }.configureEach {
+    doFirst {
+        check(file("src/main/assets/card_pose_yolov8n.onnx").isFile) {
+            "Phone detector missing. Run scripts/prepare_android_model.py before building a release APK."
+        }
+    }
 }
 dependencies {
     // 1.23.2 emits unsupported SME instructions on some Snapdragon ARM64 devices.

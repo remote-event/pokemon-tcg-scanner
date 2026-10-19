@@ -1,0 +1,6 @@
+# Phone model export only; no server, FAISS, RF-DETR or OCR installation needed.
+# Install the CPU PyTorch/torchvision pair documented in the APK workflow first.
+-r requirements-yolo.txt
+-r requirements-export.txt
+huggingface-hub==0.36.2
+Pillow==12.3.0

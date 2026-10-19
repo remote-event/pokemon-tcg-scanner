@@ -1,8 +1,8 @@
 # Release procedure
 
 The repository supports installation from a Git clone with Git LFS. It includes
-the collector-number checkpoint and labeled dataset; no public signed Android
-APK is configured here.
+the collector-number checkpoint and labeled dataset. The **Android APK** workflow
+builds signed APKs with the phone detector included.
 
 1. Run the checks in CONTRIBUTING.md and verify a new installation using the
    documented supported Python/runtime versions.
@@ -22,6 +22,46 @@ APK is configured here.
 6. Tag the reviewed version and upload only intended artifacts. Record checksums
    and supported platform requirements in the release notes.
 
-Do not upload an entire workstation folder or a debug build produced by CI: CI
-only checks compilation and deliberately lacks the phone detector. Keep the app
-ID stable so future signed updates can preserve installed users' data.
+Do not upload an entire workstation folder or the compile-only APK from **Checks**.
+The separate **Android APK** workflow prepares and verifies the model before
+publishing its artifact. Keep the application ID and signing key stable.
+
+
+## Android APK workflow
+
+The workflow runs on relevant pushes to `main` and through **Actions → Android APK →
+Run workflow**. It exports only the phone detector, runs Android unit tests, builds
+an unsigned release, aligns and signs it, verifies its signature and packaged
+model hash, and uploads a 90-day artifact with source and notices. It does not
+start a scanner server, install anything on a phone, or publish a Play Store app.
+Pull requests never receive signing secrets or publish signed APKs.
+
+For your own fork, create a dedicated release key with JDK `keytool`. Run this
+outside the repository and choose a strong password when prompted:
+
+```text
+keytool -genkeypair -keystore scanner-release.p12 -storetype PKCS12 -alias scanner -keyalg RSA -keysize 4096 -validity 10000
+```
+
+Keep the same key password as the keystore password. Back up the keystore and its
+password securely; GitHub secrets cannot be downloaded to recover a lost key.
+Never commit the key, use the shared Android debug key, or rotate it between builds.
+
+Add these repository Actions secrets through GitHub Settings or `gh secret set`:
+
+| Secret | Value |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | Base64 encoding of the complete PKCS12 keystore |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore/key password |
+
+The alias must be `scanner`. The workflow exposes secrets only to its configuration
+check and signing step, removes the temporary key afterward, and uploads only
+`dist/`. A fork without secrets fails early with a configuration message.
+
+Workflow version codes are `1000 + github.run_number`; local debug builds retain
+their development version code. Preserve the workflow's run sequence, or raise
+that offset when replacing the workflow, so published version codes keep increasing.
+The public signing fingerprint is in `signing-certificate.txt` alongside the APK.
+The APK and source bundle include the model's AGPL license and provenance;
+original code remains MIT. Source assets and the export implementation are linked
+from `SOURCES.md` in the download.

@@ -4,6 +4,25 @@ Native Kotlin and Jetpack Compose UI, CameraX capture, and ONNX Runtime card
 cropping. All remaining AI runs on the local backend. Android 8.0+ is supported;
 JDK 17 and Android SDK 36 are needed to build.
 
+## Install the GitHub build
+
+Use the [Android APK workflow](https://github.com/remote-event/pokemon-tcg-scanner/actions/workflows/android-apk.yml).
+Choose a successful run and download the artifact under **Artifacts** (GitHub
+sign-in required). Extract it and install `pokemon-tcg-scanner.apk` on your phone.
+It includes the ONNX detector, so Android Studio and local model export are not
+needed. Artifacts are retained for 90 days; a maintainer can run the workflow again.
+
+The workflow uses a persistent release key and increasing version codes so later
+builds can update earlier workflow APKs. It keeps the existing `dev.tcg.scanner`
+application ID. A locally built debug APK has a different signature and cannot
+be updated with the release APK in place. Preserve device-only data before
+changing installations; the workflow never uninstalls your app. Server-side
+collections remain in the server's scan-history storage.
+
+The download also contains checksums, the public signing-certificate fingerprint,
+license notices, matching app source, and the original phone model checkpoint.
+See [maintainer signing setup](../docs/RELEASING.md#android-apk-workflow) for forks.
+
 ## Prepare and build
 
 From the repository root, after installing the backend dependencies:
@@ -17,8 +36,9 @@ adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
 
 The export uses the pinned upstream four-corner YOLO model at 480 pixels,
 without training. Generated `card_pose_yolov8n.onnx` stays local; source archives
-contain the model specification and notices. `mobile/build.sh` refuses to package
-an app without the detector. CI compiles without it and does not publish that APK.
+contain the model specification and notices. The build wrappers and release asset task reject a missing detector.
+The **Checks** workflow performs compile/unit tests; **Android APK** prepares the
+model, tests, signs, verifies and uploads an installable release APK.
 
 Set `JAVA_HOME` and `ANDROID_HOME` to your installed JDK/SDK.
 `python scanner.py android` selects the native Windows or Unix Gradle wrapper. For WSL using

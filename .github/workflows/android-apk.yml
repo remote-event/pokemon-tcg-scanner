@@ -1,0 +1,100 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-apk.yml'
+      - 'mobile/android/**'
+      - 'desktop/tools/export_phone_detector.py'
+      - 'desktop/tcg_scanner/detection.py'
+      - 'desktop/requirements/requirements-*export.txt'
+      - 'desktop/requirements/requirements-yolo.txt'
+      - 'scripts/prepare_android_model.py'
+      - 'scripts/package_source.py'
+      - 'scripts/package_android_distribution.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check signing configuration
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE" ] || [ -z "$PASSWORD" ]; then
+            echo '::error::Configure ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD; see docs/RELEASING.md.'
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: desktop/requirements/*.txt
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare the on-device detector
+        run: |
+          python -m pip install torch==2.14.1 torchvision==0.29.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r desktop/requirements/requirements-android-export.txt
+          python scripts/prepare_android_model.py --source-output dist/source-model/card_pose_yolov8n.pt
+      - name: Build and test
+        env:
+          APK_BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          bash mobile/android/gradlew -p mobile/android testDebugUnitTest assembleRelease
+      - name: Sign and verify APK
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          umask 077
+          keyfile="$RUNNER_TEMP/scanner-release.p12"
+          trap 'rm -f "$keyfile"' EXIT
+          printf '%s' "$KEYSTORE" | base64 --decode > "$keyfile"
+          build_tools="$ANDROID_HOME/build-tools/36.0.0"
+          "$build_tools/zipalign" -P 16 -f 4 mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/aligned.apk"
+          "$build_tools/apksigner" sign --ks "$keyfile" --ks-key-alias scanner --ks-pass env:ANDROID_KEYSTORE_PASSWORD --key-pass env:ANDROID_KEYSTORE_PASSWORD --out dist/pokemon-tcg-scanner.apk "$RUNNER_TEMP/aligned.apk"
+          "$build_tools/apksigner" verify --verbose --print-certs dist/pokemon-tcg-scanner.apk > dist/signing-certificate.txt
+          "$build_tools/zipalign" -c -P 16 4 dist/pokemon-tcg-scanner.apk
+      - name: Verify packaged model and include source
+        env:
+          SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}/tree/${{ github.sha }}
+        run: |
+          python scripts/package_android_distribution.py
+          python scripts/package_source.py --output dist/pokemon-tcg-scanner-source.zip
+          cd dist
+          sha256sum pokemon-tcg-scanner.apk pokemon-tcg-scanner-source.zip source-model/card_pose_yolov8n.pt > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        id: download
+        with:
+          name: pokemon-tcg-scanner-android-${{ github.run_number }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+      - name: Download link
+        env:
+          ARTIFACT_URL: ${{ steps.download.outputs.artifact-url }}
+        run: |
+          echo "[Download the signed APK and source bundle]($ARTIFACT_URL)" >> "$GITHUB_STEP_SUMMARY"

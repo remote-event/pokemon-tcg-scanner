@@ -8,3 +8,10 @@ Checkpoint and exported-model hashes: card_pose_yolov8n.json
 
 ONNX Runtime Android is licensed under MIT:
 https://github.com/microsoft/onnxruntime/blob/main/LICENSE
+
+Full license texts are in assets/licenses/ inside this APK.
+AndroidX, Kotlin, Kotlin coroutines and OkHttp use Apache-2.0.
+Original application source: https://github.com/remote-event/pokemon-tcg-scanner
+Build/export workflow and corresponding source accompany the APK download.
+The ONNX model is a format conversion of the upstream checkpoint; it is not retrained.
+No warranty is provided; see the license texts for copying and modification terms.
